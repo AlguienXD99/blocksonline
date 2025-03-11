@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+  authDomain: "virtualblocks-b7a52.firebaseapp.com",
+  projectId: "virtualblocks-b7a52",
+  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  messagingSenderId: "490618182453",
+  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('user-info').textContent = `Bienvenido, ${user.email}`;
+                document.getElementById('edit-section').style.display = 'block';
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        document.getElementById('logout').addEventListener('click', () => {
+            signOut(auth).then(() => {
+                window.location.href = "index.html";
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <p id="user-info">Cargando usuario...</p>
+    <button id="logout">Cerrar sesión</button>
+    
+    <div id="edit-section" style="display: none;">
+        <h2>Editar Perfil</h2>
+        <label>Nombre:</label>
+        <input type="text" id="username">
+        <br>
+        <h2>Editar Character</h2>
+        <label>Color:</label>
+        <input type="color" id="char-color">
+        <br>
+        <button>Guardar cambios</button>
+    </div>
+</body>
+</html>
