@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9...",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        async function login() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        async function register() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        window.login = login;
+        window.register = register;
+    </script>
+</head>
+<body>
+    <h1>Login</h1>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="register()">Register</button>
+</body>
+</html>
