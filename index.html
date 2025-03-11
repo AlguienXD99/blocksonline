@@ -1,12 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://identitytoolkit.googleapis.com https://www.googleapis.com;">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - BLOCKSONLINE!</title>
-    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
     <style>
         body {
             font-family: Verdana, sans-serif;
@@ -64,44 +61,66 @@
     </div>
 
     <p>Already have an account? <a href="login.html">Login here</a></p>
+
 <script type="module">
-  // Importa Firebase de manera correcta
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    // 🔥 Importar Firebase correctamente
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-  // Configuración de Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-    authDomain: "virtualblocks-b7a52.firebaseapp.com",
-    projectId: "virtualblocks-b7a52",
-    storageBucket: "virtualblocks-b7a52.appspot.com",
-    messagingSenderId: "490618182453",
-    appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-  };
+    // 🔥 Configuración de Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+        authDomain: "virtualblocks-b7a52.firebaseapp.com",
+        projectId: "virtualblocks-b7a52",
+        storageBucket: "virtualblocks-b7a52.appspot.com",
+        messagingSenderId: "490618182453",
+        appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+    };
 
-  // Inicializar Firebase
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+    // 🔥 Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  // Función para registrar usuario
-  window.register = function () {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const messageBox = document.getElementById('message');
+    // 📌 Función para registrar usuario
+    window.register = async function () {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageBox = document.getElementById('message');
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        messageBox.style.color = "green";
-        messageBox.innerText = "✅ Account created! Redirecting...";
-        setTimeout(() => {
-          window.location.href = "dashboardaccess.html";
-        }, 2000);
-      })
-      .catch((error) => {
-        messageBox.style.color = "red";
-        messageBox.innerText = "❌ " + error.message;
-      });
-  };
+        try {
+            // 🔹 Crear usuario en Firebase Authentication
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // 🔹 Definir estructura del usuario en la base de datos
+            const userData = {
+                email: email,
+                online: true,  // Estado de conexión
+                avatarConfig: {  // Configuración inicial del avatar
+                    skinColor: "default",
+                    hairStyle: "short",
+                    outfit: "basic_tshirt"
+                },
+                inventory: {}  // Inventario vacío al inicio
+            };
+
+            // 🔹 Guardar datos en Firestore bajo la colección "users"
+            await setDoc(doc(db, "users", user.uid), userData);
+
+            // 🔥 Redirigir al dashboard
+            messageBox.style.color = "green";
+            messageBox.innerText = "✅ Account created! Redirecting...";
+            setTimeout(() => {
+                window.location.href = "dashboardaccess.html";
+            }, 2000);
+
+        } catch (error) {
+            messageBox.style.color = "red";
+            messageBox.innerText = "❌ " + error.message;
+        }
+    };
 </script>
 
 </body>
