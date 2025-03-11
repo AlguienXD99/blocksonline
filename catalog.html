@@ -69,7 +69,7 @@
                     const data = snapshot.val();
                     document.getElementById("nickname").value = data.nickname || "";
                     document.getElementById("inventory").textContent = JSON.stringify(data.inventory || []);
-                    document.getElementById("avatarConfig").textContent = JSON.stringify(data.avatarConfig || {});
+                    document.getElementById("equippedItems").textContent = JSON.stringify(data.equippedItems || []);
                 } else {
                     console.log("No data available for this user.");
                 }
@@ -101,13 +101,40 @@
             }
         }
 
-        // 🔹 Función para cambiar avatar (colores de cuerpo)
-        async function changeAvatarColor(color) {
+        // 🔹 Función para equipar un artículo
+        async function equipItem(itemName) {
             const user = auth.currentUser;
             if (user) {
-                const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
-                await update(userRef, { color: color });
-                alert("Avatar color changed to " + color);
+                const userRef = ref(db, "users/" + user.uid);
+                const userData = (await get(userRef)).val();
+
+                let equippedItems = userData.equippedItems || [];
+                if (!equippedItems.includes(itemName)) {
+                    equippedItems.push(itemName); // Agregar artículo a los objetos equipados
+                    await update(userRef, { equippedItems: equippedItems });
+                    alert(itemName + " has been equipped!");
+                } else {
+                    alert(itemName + " is already equipped!");
+                }
+            }
+        }
+
+        // 🔹 Función para desequipar un artículo
+        async function unequipItem(itemName) {
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = ref(db, "users/" + user.uid);
+                const userData = (await get(userRef)).val();
+
+                let equippedItems = userData.equippedItems || [];
+                const itemIndex = equippedItems.indexOf(itemName);
+                if (itemIndex !== -1) {
+                    equippedItems.splice(itemIndex, 1); // Eliminar artículo de los objetos equipados
+                    await update(userRef, { equippedItems: equippedItems });
+                    alert(itemName + " has been unequipped!");
+                } else {
+                    alert(itemName + " is not equipped!");
+                }
             }
         }
 
@@ -119,7 +146,8 @@
 
         // 🔹 Asignar eventos a los botones
         window.buyItem = buyItem;
-        window.changeAvatarColor = changeAvatarColor;
+        window.equipItem = equipItem;
+        window.unequipItem = unequipItem;
         window.logout = logout;
     </script>
 </head>
@@ -138,16 +166,25 @@
     </div>
 
     <div>
+        <h3>Equipped Items</h3>
+        <p id="equippedItems">Loading...</p>
+    </div>
+
+    <div>
         <h3>Available Items</h3>
         <div class="item">
             <img src="face-item.png" alt="Face Item">
             <p>Face Item - 100 Coins</p>
             <button class="button" onclick="buyItem('FaceItem', 100)">Buy</button>
+            <button class="button" onclick="equipItem('FaceItem')">Equip</button>
+            <button class="button" onclick="unequipItem('FaceItem')">Unequip</button>
         </div>
         <div class="item">
             <img src="tshirt-item.png" alt="T-shirt Item">
             <p>T-shirt - 50 Coins</p>
             <button class="button" onclick="buyItem('TShirtItem', 50)">Buy</button>
+            <button class="button" onclick="equipItem('TShirtItem')">Equip</button>
+            <button class="button" onclick="unequipItem('TShirtItem')">Unequip</button>
         </div>
     </div>
 
