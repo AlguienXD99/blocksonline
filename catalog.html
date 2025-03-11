@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalog - BLOCKSONLINE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .item {
+            display: inline-block;
+            margin: 20px;
+            text-align: center;
+        }
+        .item img {
+            width: 100px;
+            height: 100px;
+        }
+        #profile {
+            margin-top: 20px;
+        }
+        .button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com/",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // 🔹 Verificar si el usuario está logueado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loadUserData(user.uid);
+            } else {
+                window.location.href = "login.html"; // 🔥 Redirigir si no está logueado
+            }
+        });
+
+        // 🔹 Cargar datos del usuario desde Realtime Database
+        function loadUserData(uid) {
+            const userRef = ref(db, "users/" + uid);
+
+            // Escuchar cambios en tiempo real
+            onValue(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById("nickname").value = data.nickname || "";
+                    document.getElementById("inventory").textContent = JSON.stringify(data.inventory || []);
+                    document.getElementById("avatarConfig").textContent = JSON.stringify(data.avatarConfig || {});
+                } else {
+                    console.log("No data available for this user.");
+                }
+            });
+        }
+
+        // 🔹 Función para comprar artículos
+        async function buyItem(itemName, itemPrice) {
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = ref(db, "users/" + user.uid);
+                const userData = (await get(userRef)).val();
+                
+                if (userData.inventory) {
+                    let inventory = userData.inventory;
+                    // Verificar si el usuario ya tiene el artículo
+                    if (inventory.includes(itemName)) {
+                        alert("You already own this item!");
+                    } else {
+                        inventory.push(itemName); // Agregar artículo al inventario
+                        await update(userRef, { inventory: inventory }); // Actualizar en la base de datos
+                        alert(itemName + " has been added to your inventory!");
+                    }
+                } else {
+                    const inventory = [itemName]; // Si no tiene inventario, crearlo
+                    await update(userRef, { inventory: inventory });
+                    alert(itemName + " has been added to your inventory!");
+                }
+            }
+        }
+
+        // 🔹 Función para cambiar avatar (colores de cuerpo)
+        async function changeAvatarColor(color) {
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
+                await update(userRef, { color: color });
+                alert("Avatar color changed to " + color);
+            }
+        }
+
+        // 🔹 Cerrar sesión
+        async function logout() {
+            await signOut(auth);
+            window.location.href = "login.html";
+        }
+
+        // 🔹 Asignar eventos a los botones
+        window.buyItem = buyItem;
+        window.changeAvatarColor = changeAvatarColor;
+        window.logout = logout;
+    </script>
+</head>
+<body>
+    <h1>Welcome to Blocksonline Catalog</h1>
+
+    <div id="profile">
+        <label>Nickname:</label>
+        <input type="text" id="nickname" placeholder="Enter your nickname" readonly>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div>
+        <h3>Your Inventory</h3>
+        <p id="inventory">Loading...</p>
+    </div>
+
+    <div>
+        <h3>Available Items</h3>
+        <div class="item">
+            <img src="https://example.com/face-item.png" alt="Face Item">
+            <p>Face Item - 100 Coins</p>
+            <button class="button" onclick="buyItem('FaceItem', 100)">Buy</button>
+        </div>
+        <div class="item">
+            <img src="https://example.com/tshirt-item.png" alt="T-shirt Item">
+            <p>T-shirt - 50 Coins</p>
+            <button class="button" onclick="buyItem('TShirtItem', 50)">Buy</button>
+        </div>
+    </div>
+
+    <div>
+        <h3>Change Avatar Color</h3>
+        <button class="button" onclick="changeAvatarColor('red')">Red</button>
+        <button class="button" onclick="changeAvatarColor('blue')">Blue</button>
+        <button class="button" onclick="changeAvatarColor('green')">Green</button>
+    </div>
+</body>
+</html>
