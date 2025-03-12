@@ -1,314 +1,161 @@
-
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Singleplayer Blockbase - Virtualblocks</title>
-    <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            height: 100%; 
-            background-color: #87CEEB; /* Fondo azul cielo */
-        }
-
-        canvas { 
-            display: block; 
-        }
-
-        /* Estilos para los botones de control */
-        .mobile-controls {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .control-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 5px;
-        }
-
-        /* Botones de control (Izquierda, Derecha, Arriba, Abajo, Salto) */
-        #moveLeft { float: left; }
-        #moveRight { float: right; }
-        #moveUp { clear: both; }
-        #moveDown { float: left; }
-
-        /* Estilos para el botón de reportar */
-        #reportButton {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            padding: 10px 20px;
-            background-color: #ff6347;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* Estilos para el formulario de reporte */
-        #reportForm {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            z-index: 1000;
-            display: none;
-            background-color: white;
-            padding: 20px;
-            border: 1px solid #000;
-            border-radius: 5px;
-        }
-
-        #reportDescription {
-            width: 300px;
-            height: 100px;
-        }
-
-        button {
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:disabled {
-            background-color: #ccc;
-        }
-    </style>
-</head>
-<body>
-    <audio autoplay loop muted>
-    <source src="https://gitlab.com/AlguienXD99/createfuntv/-/raw/main/punch.mp3" type="audio/mp3">
-    Tu navegador no soporta el elemento de audio.
-    </audio>
-    <button onclick="window.close();">Salir del juego</button>
+    <title>BLOCKSONLINE</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
-    
+</head>
+<body style="margin:0; overflow:hidden;">
+    <button id="closeGame" style="position: absolute; top: 10px; left: 10px;">Close game</button>
+
     <script>
-        // Configuración básica de Three.js
+        document.getElementById("closeGame").addEventListener("click", () => {
+            location.reload(); // Simula cerrar el juego
+        });
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com/",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Crear la escena con Three.js
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Agregar luces
-        const ambientLight = new THREE.AmbientLight(0x404040); // Luz suave
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // Luz direccional
-        directionalLight.position.set(5, 10, 5).normalize();
-        scene.add(ambientLight);
-        scene.add(directionalLight);
+        // Pantalla de carga
+        const loadingText = document.createElement('div');
+        loadingText.innerHTML = "Loading bricks: 0/10000";
+        Object.assign(loadingText.style, {
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '24px',
+            color: 'white'
+        });
+        document.body.appendChild(loadingText);
 
-        // Crear el plano del suelo (baseplate)
-        const baseplateGeometry = new THREE.PlaneGeometry(100, 100);
-        const baseplateMaterial = new THREE.MeshLambertMaterial({ color: 0x808080, side: THREE.DoubleSide });
-        const baseplate = new THREE.Mesh(baseplateGeometry, baseplateMaterial);
-        baseplate.rotation.x = - Math.PI / 2;
-        baseplate.position.y = -1;
-        scene.add(baseplate);
+        let bricksLoaded = 0;
+        const totalBricks = 10000;
 
-        // Crear skybox (Fondo)
-        const loader = new THREE.CubeTextureLoader();
-        const skyboxTexture = loader.load([ 
-            'skybox.png', 
-            'skybox.png', 
-            'skybox.png', 
-            'skybox.png', 
-            'skybox.png', 
-            'skybox.png' 
-        ]);
-        scene.background = skyboxTexture;
+        function loadBricks() {
+            bricksLoaded += Math.floor(Math.random() * 500);
+            if (bricksLoaded >= totalBricks) {
+                bricksLoaded = totalBricks;
+                document.body.removeChild(loadingText);
+                startGame();
+            } else {
+                loadingText.innerHTML = `Loading bricks: ${bricksLoaded}/${totalBricks}`;
+                setTimeout(loadBricks, 200);
+            }
+        }
 
-        // Crear cuerpo del personaje (cabeza, torso, piernas)
-        const bodyGeometry = new THREE.BoxGeometry(1, 2, 1);
-        const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-        const legsGeometry = new THREE.BoxGeometry(0.8, 1, 1);
-        const armsGeometry = new THREE.BoxGeometry(0.5, 1.5, 2);
+        loadBricks();
 
-        // Materiales iniciales
-        const bodyMaterial = new THREE.MeshLambertMaterial({ color: '#00ff00' });
-        let headMaterial = new THREE.MeshBasicMaterial({ color: '#f0f0f0' }); // Color predeterminado
-        const legsMaterial = new THREE.MeshLambertMaterial({ color: '#ff0000' });
-        const armsMaterial = new THREE.MeshLambertMaterial({ color: '#ff0000' });
+        function startGame() {
+            // Baseplate
+            const baseGeometry = new THREE.BoxGeometry(20, 1, 20);
+            const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
+            const baseplate = new THREE.Mesh(baseGeometry, baseMaterial);
+            baseplate.position.y = -1;
+            scene.add(baseplate);
 
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        body.position.set(0, 1, 0);
+            // Jugador
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const player = new THREE.Mesh(playerGeometry, playerMaterial);
+            scene.add(player);
+            camera.position.set(0, 2, 5);
 
-        const head = new THREE.Mesh(headGeometry, headMaterial);
-        head.position.set(0, 2.3, 0);
+            let velocity = { x: 0, y: 0, z: 0 };
+            const gravity = -0.02;
+            const jumpStrength = 0.5;
+            let onGround = false;
+            const spawnPosition = { x: 0, y: 1, z: 0 };
+            player.position.set(spawnPosition.x, spawnPosition.y, spawnPosition.z);
 
-        const legs = new THREE.Mesh(legsGeometry, legsMaterial);
-        legs.position.set(0, -0.5, 0);
-        
-        const arms = new THREE.Mesh(armsGeometry, armsMaterial);
-        arms.position.set(0, 1.2, 0);
+            // Conectar jugador a Firebase
+            const tempUserId = `user_${Math.random().toString(36).substr(2, 9)}`;
+            const playerRef = db.ref('players/' + tempUserId);
+            playerRef.set({ position: spawnPosition });
 
-        // Agrupar partes del cuerpo
-        const player = new THREE.Group();
-        player.add(body);
-        player.add(head);
-        player.add(legs);
-        player.add(arms);
-        scene.add(player);
+            // Desconectar tras 20 min
+            setTimeout(() => {
+                playerRef.remove();
+                alert("Fuiste desconectado por inactividad");
+                location.reload();
+            }, 20 * 60 * 1000);
 
-        // Cargar la textura desde localStorage al cargar la página
-        const textureLoader = new THREE.TextureLoader();
+            // Movimiento con teclado
+            const keys = {};
+            window.addEventListener("keydown", (event) => keys[event.key] = true);
+            window.addEventListener("keyup", (event) => keys[event.key] = false);
 
-        // Primero, carga la configuración de avatar (colores)
-        function loadAvatarSettings() {
-            const avatarSettings = JSON.parse(localStorage.getItem('avatarSettings')) || {};
+            function updatePlayer() {
+                if (keys['w']) player.position.z -= 0.1;
+                if (keys['s']) player.position.z += 0.1;
+                if (keys['a']) player.position.x -= 0.1;
+                if (keys['d']) player.position.x += 0.1;
+                if (keys[' '] && onGround) {
+                    velocity.y = jumpStrength;
+                    onGround = false;
+                }
 
-            // Colores del torso y piernas
-            if (avatarSettings.torsoColor) {
-                bodyMaterial.color.set(avatarSettings.torsoColor);
+                velocity.y += gravity;
+                player.position.y += velocity.y;
+                if (player.position.y <= baseplate.position.y + 1) {
+                    player.position.y = baseplate.position.y + 1;
+                    velocity.y = 0;
+                    onGround = true;
+                }
+
+                if (player.position.y < -10) {
+                    player.position.set(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+                    velocity.y = 0;
+                }
+
+                playerRef.set({ position: player.position });
             }
 
-            if (avatarSettings.legsColor) {
-                legsMaterial.color.set(avatarSettings.legsColor);
-            }
-
-            if (avatarSettings.armsColor) {
-                armsMaterial.color.set(avatarSettings.armsColor);
-            }
-
-            // Color o textura de la cabeza
-            if (avatarSettings.faceTexture) {
-                textureLoader.load(
-                    avatarSettings.faceTexture,
-                    (texture) => {
-                        headMaterial.map = texture;
-                        headMaterial.needsUpdate = true;
-                    },
-                    undefined,
-                    (error) => {
-                        console.error('Error cargando la textura de la cara:', error);
+            // Actualizar jugadores en tiempo real
+            db.ref('players').on('value', (snapshot) => {
+                snapshot.forEach((child) => {
+                    if (child.key !== tempUserId) {
+                        let otherPlayer = scene.getObjectByName(child.key);
+                        if (!otherPlayer) {
+                            const newPlayer = new THREE.Mesh(playerGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+                            newPlayer.name = child.key;
+                            scene.add(newPlayer);
+                        }
+                        scene.getObjectByName(child.key).position.set(
+                            child.val().position.x, child.val().position.y, child.val().position.z
+                        );
                     }
-                );
-            } else if (avatarSettings.headColor) {
-                headMaterial.map = null; // Elimina la textura si no se usa
-                headMaterial.color.set(avatarSettings.headColor);
-                headMaterial.needsUpdate = true;
-            }
-        }
-
-        // Ejecutar la carga de la configuración del avatar
-        loadAvatarSettings();
-
-        // Función para cargar la textura de la cara si se ha establecido en localStorage
-        let equipedFaceImage = localStorage.getItem("equippedFaceImage");
-
-        if (equipedFaceImage) {
-            textureLoader.load(equipedFaceImage, (texture) => {
-                headMaterial.map = texture;
-                headMaterial.needsUpdate = true;
+                });
             });
-        } else {
-            // Si no hay imagen guardada, cargar una imagen predeterminada
-            textureLoader.load('face1.png', (texture) => {
-                headMaterial.map = texture;
-                headMaterial.needsUpdate = true;
-            });
-        }
 
-        // Crear bloque que recarga la página al ser tocado
-        const reloadBlockGeometry = new THREE.BoxGeometry(2, 2, 2);
-        const reloadBlockMaterial = new THREE.MeshLambertMaterial({ color: 0x0000ff });
-        const reloadBlock = new THREE.Mesh(reloadBlockGeometry, reloadBlockMaterial);
-        reloadBlock.position.set(0, 2, -5); // Colócalo en la escena
-        scene.add(reloadBlock);
-
-        // Detectar la colisión del jugador con el bloque de recarga
-        function detectCollision() {
-            const playerBoundingBox = new THREE.Box3().setFromObject(player);
-            const reloadBlockBoundingBox = new THREE.Box3().setFromObject(reloadBlock);
-
-            if (playerBoundingBox.intersectsBox(reloadBlockBoundingBox)) {
-                window.location.reload(); // Recargar la página
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
             }
+            animate();
         }
-
-        // Configuración de cámara y controles
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.25;
-        controls.enableZoom = true;
-        controls.enableRotate = true;
-
-        // Variables de movimiento
-        const speed = 0.1;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let isJumping = false;
-        let jumpHeight = 1;
-        let originalY = player.position.y;
-        let rotationSpeed = 0.05; // Velocidad de rotación
-
-        // Enfriamiento del salto (Cooldown)
-        let canJump = true; // Variable de enfriamiento para evitar saltos repetidos rápidamente
-
-        // Eventos de teclado para movimiento y salto
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'w') moveForward = true;
-            if (event.key === 's') moveBackward = true;
-            if (event.key === 'a') moveLeft = true;
-            if (event.key === 'd') moveRight = true;
-            if (event.key === ' ') {
-                if (!isJumping && canJump) {
-                    isJumping = true;
-                    canJump = false; // Evitar otro salto hasta que el cooldown termine
-                    setTimeout(() => {
-                        canJump = true; // Permitir saltar después de 1 segundo
-                    }, 1000); // Cooldown de 1 segundo
-                }
-            }
-
-            // Eventos para girar el personaje con las flechas
-            if (event.key === 'ArrowLeft') player.rotation.y += rotationSpeed;
-            if (event.key === 'ArrowRight') player.rotation.y -= rotationSpeed;
-        });
-
-        document.addEventListener('keyup', (event) => {
-            if (event.key === 'w') moveForward = false;
-            if (event.key === 's') moveBackward = false;
-            if (event.key === 'a') moveLeft = false;
-            if (event.key === 'd') moveRight = false;
-        });
-
-        // Función de actualización
-        function update() {
-            if (moveForward) player.position.z -= speed;
-            if (moveBackward) player.position.z += speed;
-            if (moveLeft) player.position.x -= speed;
-            if (moveRight) player.position.x += speed;
-
-            if (isJumping) {
-                player.position.y += 0.1; // Salto
-                if (player.position.y >= originalY + jumpHeight) {
-                    isJumping = false;
-                }
-            } else if (player.position.y > originalY) {
-                player.position.y -= 0.1; // Caída
-            }
-
-            detectCollision(); // Detectar si se toca el bloque de recarga
-            controls.update();
-            renderer.render(scene, camera);
-            requestAnimationFrame(update);
-        }
-
-        camera.position.z = 5;
-        update();
     </script>
 </body>
 </html>
