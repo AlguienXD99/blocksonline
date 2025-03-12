@@ -7,6 +7,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
@@ -20,14 +21,10 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
         let playerId = Math.random().toString(36).substr(2, 9);
         const playerRef = ref(db, `players/${playerId}`);
-        set(playerRef, { position: { x: 0, y: 1, z: 0 }, connected: true });
-
-        window.addEventListener("beforeunload", () => remove(playerRef));
         
-        import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
+        window.addEventListener("beforeunload", () => remove(playerRef));
 
         document.body.innerHTML = '<div id="loading">Cargando...</div>';
         setTimeout(() => {
@@ -47,6 +44,39 @@
             const baseplate = new THREE.Mesh(baseGeometry, baseMaterial);
             baseplate.position.y = -1;
             scene.add(baseplate);
+
+            const players = {};
+            function addPlayer(id, position) {
+                if (!players[id]) {
+                    const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+                    const playerMaterial = new THREE.MeshBasicMaterial({ color: id === playerId ? 0x00ff00 : 0xff0000 });
+                    const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+                    playerMesh.position.set(position.x, position.y, position.z);
+                    scene.add(playerMesh);
+                    players[id] = playerMesh;
+                }
+            }
+
+            function removePlayer(id) {
+                if (players[id]) {
+                    scene.remove(players[id]);
+                    delete players[id];
+                }
+            }
+
+            function updatePlayers(snapshot) {
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data.connected) {
+                        addPlayer(child.key, data.position);
+                        players[child.key].position.set(data.position.x, data.position.y, data.position.z);
+                    } else {
+                        removePlayer(child.key);
+                    }
+                });
+            }
+
+            onValue(ref(db, "players"), updatePlayers);
 
             const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
             const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -83,41 +113,12 @@
                     onGround = true;
                 }
 
-                if (player.position.y < -10) {
-                    player.position.set(0, 1, 0);
-                    velocity.y = 0;
-                }
-
                 set(playerRef, { position: { x: player.position.x, y: player.position.y, z: player.position.z }, connected: true });
-            }
-
-            function updateLeaderboard() {
-                get(ref(db, "players")).then((snapshot) => {
-                    let leaderboard = document.getElementById("leaderboard");
-                    if (!leaderboard) {
-                        leaderboard = document.createElement("div");
-                        leaderboard.id = "leaderboard";
-                        leaderboard.style.position = "absolute";
-                        leaderboard.style.top = "10px";
-                        leaderboard.style.right = "10px";
-                        leaderboard.style.backgroundColor = "white";
-                        leaderboard.style.padding = "10px";
-                        document.body.appendChild(leaderboard);
-                    }
-                    leaderboard.innerHTML = "<b>Jugadores Conectados:</b><br>";
-                    snapshot.forEach(child => {
-                        const player = child.val();
-                        if (player.connected) {
-                            leaderboard.innerHTML += `Jugador ${child.key}<br>`;
-                        }
-                    });
-                });
             }
 
             function animate() {
                 requestAnimationFrame(animate);
                 updatePlayer();
-                updateLeaderboard();
                 renderer.render(scene, camera);
             }
             animate();
