@@ -7,7 +7,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
 
         // 🔥 Configuración de Firebase
@@ -26,31 +26,38 @@
         const db = getDatabase(firebaseApp);
         const auth = getAuth(firebaseApp);
 
-        // 🔑 Iniciar sesión anónima
-        signInAnonymously(auth).catch(error => console.error("Error de autenticación:", error));
+        // 🎮 Función para iniciar sesión con email y password
+        document.getElementById("loginForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const playerId = user.uid;
-                const playerRef = ref(db, `players/${playerId}`);
-
-                // Registrar jugador y programar eliminación al desconectarse
-                set(playerRef, { position: { x: 0, y: 1, z: 0 }, connected: true });
-                onDisconnect(playerRef).remove();
-
-                startGame(playerId, playerRef);
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log("Usuario autenticado:", userCredential.user);
+            } catch (error) {
+                console.error("Error de autenticación:", error.message);
+                alert("Error: " + error.message);
             }
         });
 
-        function startGame(playerId, playerRef) {
+        // ⚡ Detectar cambios en la autenticación
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById("loginContainer").style.display = "none";
+                startGame(user.uid);
+            }
+        });
+
+        function startGame(playerId) {
             document.body.innerHTML = '<div id="loading">Cargando...</div>';
             setTimeout(() => {
                 document.getElementById("loading").remove();
-                initGame(playerId, playerRef);
+                initGame(playerId);
             }, 2000);
         }
 
-        function initGame(playerId, playerRef) {
+        function initGame(playerId) {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer();
@@ -93,7 +100,6 @@
                         updatedPlayers[child.key] = true;
                     }
                 });
-                // Eliminar jugadores desconectados
                 Object.keys(players).forEach(id => {
                     if (!updatedPlayers[id]) removePlayer(id);
                 });
@@ -132,7 +138,7 @@
                     velocity.y = 0;
                     onGround = true;
                 }
-                set(playerRef, { position: { x: player.position.x, y: player.position.y, z: player.position.z }, connected: true });
+                set(ref(db, `players/${playerId}`), { position: { x: player.position.x, y: player.position.y, z: player.position.z }, connected: true });
             }
 
             function animate() {
@@ -146,6 +152,14 @@
     </script>
 </head>
 <body style="margin:0; overflow:hidden;">
+    <div id="loginContainer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+        <h2>Iniciar sesión</h2>
+        <form id="loginForm">
+            <input type="email" id="email" placeholder="Correo electrónico" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+        </form>
+    </div>
     <button id="closeGame" style="position: absolute; top: 10px; left: 10px;">Cerrar juego</button>
     <script>
         document.getElementById("closeGame").addEventListener("click", () => location.reload());
