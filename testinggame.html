@@ -5,178 +5,148 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Juego Multijugador 3D - Blocksonline</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
-
-        // Configuración de Firebase
-        const firebaseConfig = {
-          apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-          authDomain: "virtualblocks-b7a52.firebaseapp.com",
-          databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-          projectId: "virtualblocks-b7a52",
-          storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-          messagingSenderId: "490618182453",
-          appId: "1:490618182453:web:93385819c7ff08537d8a7d"
-        };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        // Variables de juego
-        let scene, camera, renderer, playerMesh;
-        
-        // Inicialización de Firebase y Three.js
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loadUserData(user.uid);  // Cargar datos del usuario
-                createMainPlayer(user.uid);  // Crear el jugador principal
-                listenForPlayerMoves(user.uid);  // Escuchar movimientos del jugador
-            } else {
-                window.location.href = "login.html"; // Redirigir si no está logueado
-            }
-        });
-
-        // Cargar datos del usuario y su avatar
-        function loadUserData(uid) {
-            const userRef = ref(db, "users/" + uid);
-            onValue(userRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    const avatarColor = data.avatarConfig ? data.avatarConfig.color : "gray";
-                    updateAvatarAppearance(data.nickname, avatarColor);
-                } else {
-                    createUser(uid);
-                }
-            });
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <style>
+        body { margin: 0; background: white; overflow: hidden; }
+        canvas { display: block; }
+        #leaderboard { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            background: rgba(0, 0, 0, 0.7); 
+            color: white; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: Arial, sans-serif;
         }
-
-        // Crear datos del usuario si no existen
-        function createUser(uid) {
-            const newUser = {
-                nickname: "Jugador_" + uid,
-                avatarConfig: { color: "blue" }
-            };
-            set(ref(db, "users/" + uid), newUser);
-            updateAvatarAppearance(newUser.nickname, newUser.avatarConfig.color);
-        }
-
-        // Actualizar apariencia del avatar
-        function updateAvatarAppearance(nickname, avatarColor) {
-            document.getElementById("nickname").value = nickname;
-            document.getElementById("avatar").style.backgroundColor = avatarColor;
-        }
-
-        // Crear el jugador principal
-        function createMainPlayer(uid) {
-            playerMesh = new THREE.Mesh(
-                new THREE.SphereGeometry(1),
-                new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff })
-            );
-            playerMesh.name = uid;
-            scene.add(playerMesh);
-            playerMesh.position.set(0, 1, 0);
-            camera.position.z = 5;
-            movePlayer(uid, playerMesh.position);
-        }
-
-        // Función para mover jugador en Firebase
-        function movePlayer(uid, position) {
-            const playerRef = ref(db, "players/" + uid);
-            update(playerRef, { position: position });
-        }
-
-        // Escuchar los movimientos de los jugadores
-        function listenForPlayerMoves(uid) {
-            const playerRef = ref(db, "players/" + uid);
-            onValue(playerRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const playerData = snapshot.val();
-                    updatePlayerPosition(uid, playerData.position);
-                } else {
-                    createPlayer(uid, { x: 0, y: 1, z: 0 });
-                }
-            });
-        }
-
-        // Crear un jugador si no existe
-        function createPlayer(uid, position) {
-            set(ref(db, "players/" + uid), { position: position });
-        }
-
-        // Actualizar posición de un jugador
-        function updatePlayerPosition(uid, position) {
-            const playerElement = scene.getObjectByName(uid);
-            if (playerElement) {
-                playerElement.position.set(position.x, position.y, position.z);
-            }
-        }
-
-        // Cargar otros jugadores al juego
-        function loadOtherPlayers() {
-            const playersRef = ref(db, "players");
-            onValue(playersRef, (snapshot) => {
-                snapshot.forEach((childSnapshot) => {
-                    const playerData = childSnapshot.val();
-                    if (!scene.getObjectByName(childSnapshot.key)) {
-                        addPlayerToGame(childSnapshot.key, playerData.position);
-                    } else {
-                        updatePlayerPosition(childSnapshot.key, playerData.position);
-                    }
-                });
-            });
-        }
-
-        // Agregar un jugador al juego
-        function addPlayerToGame(uid, position) {
-            const playerElement = new THREE.Mesh(
-                new THREE.SphereGeometry(1),
-                new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff })
-            );
-            playerElement.name = uid;
-            playerElement.position.set(position.x, position.y, position.z);
-            scene.add(playerElement);
-        }
-
-        // Inicialización de Three.js
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-            window.addEventListener("keydown", onKeyDown);
-
-            const animate = function () {
-                requestAnimationFrame(animate);
-                renderer.render(scene, camera);
-            };
-            animate();
-        }
-
-        // Movimiento del jugador con las teclas
-        function onKeyDown(event) {
-            const movementSpeed = 0.1;
-            if (playerMesh) {
-                if (event.key === "w") playerMesh.position.z -= movementSpeed;
-                if (event.key === "s") playerMesh.position.z += movementSpeed;
-                if (event.key === "a") playerMesh.position.x -= movementSpeed;
-                if (event.key === "d") playerMesh.position.x += movementSpeed;
-                if (event.key === " ") playerMesh.position.y += movementSpeed;
-
-                movePlayer(playerMesh.name, playerMesh.position);
-            }
-        }
-
-        init();
-    </script>
+    </style>
 </head>
 <body>
-    <h1>Juego Multijugador 3D - Blocksonline</h1>
-    <div>
-        <input type="text" id="nickname" placeholder="Tu nombre de usuario" disabled />
-        <div id="avatar" style="width: 50px; height: 50px; background-color: gray;"></div>
-    </div>
+<div id="leaderboard">Leaderboard</div>
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAZM_UTKUtkjoXSmhAU2yFaWTgt9oUwktA",
+    authDomain: "virtualblocks-servers.firebaseapp.com",
+    databaseURL: "https://virtualblocks-servers-default-rtdb.firebaseio.com",
+    projectId: "virtualblocks-servers",
+    storageBucket: "virtualblocks-servers.appspot.com",
+    messagingSenderId: "796633829717",
+    appId: "1:796633829717:web:fcbd2d376565b0160e1fdc"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+let scene, camera, renderer, playerMesh;
+let players = {};
+
+const canvas = document.createElement("canvas");
+document.body.appendChild(canvas);
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;
+        player.name = user.displayName || "Anónimo";
+        loadPlayerData(player.id);
+        createMainPlayer(player.id);
+        listenForPlayerMoves(player.id);
+        gameLoop();
+    } else {
+        window.location.href = "index.html";
+    }
+});
+
+function loadPlayerData(uid) {
+    const userRef = db.ref("players/" + uid);
+    userRef.on("value", snapshot => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            players[uid] = data;
+            updateLeaderboard();
+        }
+    });
+}
+
+function createMainPlayer(uid) {
+    playerMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(1),
+        new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff })
+    );
+    playerMesh.name = uid;
+    scene.add(playerMesh);
+    playerMesh.position.set(0, 1, 0);
+    camera.position.z = 5;
+    movePlayer(uid, playerMesh.position);
+}
+
+function movePlayer(uid, position) {
+    const playerRef = db.ref("players/" + uid);
+    playerRef.update({ position });
+}
+
+function listenForPlayerMoves(uid) {
+    const playerRef = db.ref("players/" + uid);
+    playerRef.on("value", snapshot => {
+        if (snapshot.exists()) {
+            const playerData = snapshot.val();
+            updatePlayerPosition(uid, playerData.position);
+        }
+    });
+}
+
+function updatePlayerPosition(uid, position) {
+    const playerElement = scene.getObjectByName(uid);
+    if (playerElement) {
+        playerElement.position.set(position.x, position.y, position.z);
+    }
+}
+
+function updateLeaderboard() {
+    const leaderboard = document.getElementById("leaderboard");
+    leaderboard.innerHTML = "<b>Leaderboard</b><br>";
+    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+    sorted.forEach(p => {
+        leaderboard.innerHTML += `${p.name}: ${p.score} puntos<br>`;
+    });
+}
+
+function gameLoop() {
+    if (!scene) {
+        initThreeJS();
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    updatePlayerPositions();
+    renderThreeJS();
+    requestAnimationFrame(gameLoop);
+}
+
+function initThreeJS() {
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+}
+
+function updatePlayerPositions() {
+    Object.keys(players).forEach(uid => {
+        const p = players[uid];
+        const playerElement = scene.getObjectByName(uid);
+        if (playerElement) {
+            playerElement.position.set(p.position.x, p.position.y, p.position.z);
+        }
+    });
+}
+
+function renderThreeJS() {
+    renderer.render(scene, camera);
+}
+</script>
 </body>
 </html>
