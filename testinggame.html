@@ -11,15 +11,15 @@
         import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
         // Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "TU_AUTH_DOMAIN",
+            databaseURL: "TU_DATABASE_URL",
+            projectId: "TU_PROJECT_ID",
+            storageBucket: "TU_STORAGE_BUCKET",
+            messagingSenderId: "TU_MESSAGING_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
@@ -98,11 +98,11 @@ const firebaseConfig = {
 
         // Gráficos en 3D con Three.js
         let scene, camera, renderer;
+        let player, velocity, direction, isJumping = false;
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
@@ -110,7 +110,7 @@ const firebaseConfig = {
             // Crear una esfera representando al jugador
             const geometry = new THREE.SphereGeometry(1, 32, 32);
             const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const player = new THREE.Mesh(geometry, material);
+            player = new THREE.Mesh(geometry, material);
             scene.add(player);
 
             camera.position.z = 5;
@@ -119,8 +119,22 @@ const firebaseConfig = {
             const light = new THREE.AmbientLight(0x404040); // Luz suave
             scene.add(light);
 
+            velocity = new THREE.Vector3();
+            direction = new THREE.Vector3();
+
+            // Event listener para las teclas
+            window.addEventListener('keydown', onKeyDown, false);
+            window.addEventListener('keyup', onKeyUp, false);
+
             const animate = function () {
                 requestAnimationFrame(animate);
+
+                // Actualizar el jugador y la cámara
+                player.position.add(velocity);
+                if (!isJumping) {
+                    camera.position.lerp(player.position.clone().add(new THREE.Vector3(0, 2, 5)), 0.1); // La cámara sigue al jugador
+
+                }
                 renderer.render(scene, camera);
             };
 
@@ -129,7 +143,45 @@ const firebaseConfig = {
 
         init();
 
-        // Evitar jugadores fantasmas
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, jump = false;
+
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': if (!isJumping) { jump = true; isJumping = true; } break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        }
+
+        function updatePlayerMovement() {
+            direction.set(0, 0, 0); // Resetear dirección
+
+            if (moveForward) direction.z -= 0.1;
+            if (moveBackward) direction.z += 0.1;
+            if (moveLeft) direction.x -= 0.1;
+            if (moveRight) direction.x += 0.1;
+
+            velocity.copy(direction);
+
+            if (jump) {
+                player.position.y += 0.2; // El salto
+                jump = false;
+            }
+
+            movePlayer(player.id, player.position);
+        }
+
         function removePlayerOnDisconnect(uid) {
             const playerRef = ref(db, "players/" + uid);
             playerRef.onDisconnect().remove();
@@ -149,6 +201,17 @@ const firebaseConfig = {
                 });
             });
         }
+
+        // Actualizar el movimiento cada cuadro
+        function animate() {
+            requestAnimationFrame(animate);
+
+            updatePlayerMovement();
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
     </script>
 </head>
 <body>
