@@ -20,6 +20,7 @@ const firebaseConfig = {
   messagingSenderId: "490618182453",
   appId: "1:490618182453:web:93385819c7ff08537d8a7c"
 };
+
         // 🔥 Inicializar Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getDatabase(firebaseApp);
@@ -28,16 +29,12 @@ const firebaseConfig = {
         // 🔑 Iniciar sesión anónima en Firebase Auth
         signInAnonymously(auth).catch(error => console.error("Error de autenticación:", error));
 
-        // 📌 Esperar autenticación antes de interactuar con la base de datos
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 const playerId = user.uid;
                 const playerRef = ref(db, `players/${playerId}`);
-
                 set(playerRef, { position: { x: 0, y: 1, z: 0 }, connected: true });
-
                 window.addEventListener("beforeunload", () => remove(playerRef));
-
                 startGame(playerId, playerRef);
             }
         });
@@ -64,6 +61,7 @@ const firebaseConfig = {
             scene.add(baseplate);
 
             const players = {};
+
             function addPlayer(id, position) {
                 if (!players[id]) {
                     const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
@@ -83,14 +81,18 @@ const firebaseConfig = {
             }
 
             function updatePlayers(snapshot) {
+                const updatedPlayers = {};
                 snapshot.forEach(child => {
                     const data = child.val();
                     if (data.connected) {
                         addPlayer(child.key, data.position);
                         players[child.key].position.set(data.position.x, data.position.y, data.position.z);
-                    } else {
-                        removePlayer(child.key);
+                        updatedPlayers[child.key] = true;
                     }
+                });
+                // Eliminar jugadores desconectados
+                Object.keys(players).forEach(id => {
+                    if (!updatedPlayers[id]) removePlayer(id);
                 });
             }
 
@@ -116,21 +118,17 @@ const firebaseConfig = {
                 if (keys['s']) player.position.z += 0.1;
                 if (keys['a']) player.position.x -= 0.1;
                 if (keys['d']) player.position.x += 0.1;
-
                 if (keys[' '] && onGround) {
                     velocity.y = jumpStrength;
                     onGround = false;
                 }
-
                 velocity.y += gravity;
                 player.position.y += velocity.y;
-
                 if (player.position.y <= baseplate.position.y + 1) {
                     player.position.y = baseplate.position.y + 1;
                     velocity.y = 0;
                     onGround = true;
                 }
-
                 set(playerRef, { position: { x: player.position.x, y: player.position.y, z: player.position.z }, connected: true });
             }
 
@@ -139,6 +137,7 @@ const firebaseConfig = {
                 updatePlayer();
                 renderer.render(scene, camera);
             }
+
             animate();
         }
     </script>
