@@ -10,7 +10,6 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js";
 
-        // Configuración de Firebase
         const firebaseConfig = { 
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
             authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -26,7 +25,6 @@
         const auth = getAuth(app);
         let players = {}; 
 
-        // Inicio de sesión
         document.getElementById("loginForm").addEventListener("submit", async (event) => {
             event.preventDefault();
             const email = document.getElementById("email").value;
@@ -61,7 +59,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Crear base
             const baseplate = new THREE.Mesh(
                 new THREE.BoxGeometry(20, 1, 20), 
                 new THREE.MeshBasicMaterial({ color: 0x808080 })
@@ -78,7 +75,6 @@
                     playerMesh.position.set(position.x, position.y, position.z);
                     scene.add(playerMesh);
                     players[id] = playerMesh;
-                    console.log(`Jugador ${id} agregado a la escena.`);
                 }
             }
 
@@ -86,17 +82,13 @@
                 if (players[id]) {
                     scene.remove(players[id]);
                     delete players[id];
-                    console.log(`Jugador ${id} eliminado.`);
                 }
             }
 
-            // Verificar jugadores en Firebase
             onValue(ref(db, "players"), (snapshot) => {
-                console.log("Jugadores en Firebase:", snapshot.val()); // Verificar datos
                 const updatedPlayers = {};
                 snapshot.forEach(child => {
                     const data = child.val();
-                    console.log(`Jugador detectado: ${child.key} en posición`, data.position);
                     if (data.connected) {
                         addPlayer(child.key, data.position);
                         players[child.key].position.set(data.position.x, data.position.y, data.position.z);
@@ -109,7 +101,6 @@
                 });
             });
 
-            // Creación del jugador local
             const player = new THREE.Mesh(
                 new THREE.BoxGeometry(1, 2, 1), 
                 new THREE.MeshBasicMaterial({ color: 0x00ff00 })
@@ -143,7 +134,6 @@
                     onGround = true;
                 }
 
-                // Actualizar en Firebase
                 set(ref(db, `players/${playerId}`), { 
                     position: { x: player.position.x, y: player.position.y, z: player.position.z }, 
                     connected: true 
@@ -157,7 +147,6 @@
             }
             animate();
 
-            // Manejo de desconexión
             onDisconnect(ref(db, `players/${playerId}`)).remove();
         }
     </script>
