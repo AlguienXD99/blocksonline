@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -78,6 +78,8 @@
                     document.getElementById("nickname").value = data.nickname || "";
                     document.getElementById("inventory").textContent = JSON.stringify(data.inventory || []);
                     document.getElementById("equippedItems").textContent = JSON.stringify(data.equippedItems || []);
+                    // Establecer el color del avatar desde la base de datos
+                    document.getElementById("avatar").style.backgroundColor = data.avatarColor || "#ccc";
                 } else {
                     console.log("No data available for this user.");
                 }
@@ -86,8 +88,15 @@
 
         // 🔹 Función para cambiar el color del avatar
         function changeAvatarColor(color) {
+            const user = auth.currentUser;
             const avatar = document.getElementById('avatar');
-            avatar.style.backgroundColor = color; // Cambiar color del fondo del avatar
+            if (user) {
+                const userRef = ref(db, "users/" + user.uid);
+                // Cambiar color del avatar en la interfaz
+                avatar.style.backgroundColor = color;
+                // Guardar el color del avatar en la base de datos
+                update(userRef, { avatarColor: color });
+            }
         }
 
         // 🔹 Función para comprar artículos
