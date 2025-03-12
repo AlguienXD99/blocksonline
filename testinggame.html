@@ -7,8 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
         // Configuración de Firebase
 const firebaseConfig = {
@@ -24,7 +24,7 @@ const firebaseConfig = {
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // Escuchar el estado de la autenticación del usuario
+        // Escuchar cambios en la autenticación del usuario
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 loadUserData(user.uid);
@@ -35,7 +35,7 @@ const firebaseConfig = {
             }
         });
 
-        // Cargar la configuración del usuario desde Firebase
+        // Cargar datos del usuario y su avatar
         function loadUserData(uid) {
             const userRef = ref(db, "users/" + uid);
             onValue(userRef, (snapshot) => {
@@ -43,34 +43,17 @@ const firebaseConfig = {
                     const data = snapshot.val();
                     const avatarColor = data.avatarConfig ? data.avatarConfig.color : "gray";
                     updateAvatarAppearance(data.nickname, avatarColor);
-                    addPlayerToGame(uid, { x: 0, y: 0, z: 0 }); // Posición inicial del jugador
                 }
             });
         }
 
-        // Actualizar la apariencia del avatar
+        // Función para actualizar la apariencia del avatar
         function updateAvatarAppearance(nickname, avatarColor) {
             document.getElementById("nickname").value = nickname;
             document.getElementById("avatar").style.backgroundColor = avatarColor;
         }
 
-        // Agregar al jugador al juego en la escena 3D
-        function addPlayerToGame(uid, position) {
-            const playerElement = new THREE.Mesh(
-                new THREE.SphereGeometry(1),
-                new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff })
-            );
-            playerElement.position.set(position.x, position.y, position.z);
-            playerElement.id = uid;
-            scene.add(playerElement);
-
-            // Guardar la posición en la base de datos de Firebase
-            set(ref(db, "players/" + uid), {
-                position: position
-            });
-        }
-
-        // Escuchar los movimientos de otros jugadores en Firebase
+        // Función para escuchar los movimientos de los jugadores
         function listenForPlayerMoves(uid) {
             const playerRef = ref(db, "players/" + uid);
             onValue(playerRef, (snapshot) => {
@@ -81,125 +64,78 @@ const firebaseConfig = {
             });
         }
 
-        // Actualizar la posición del jugador en la escena 3D
+        // Función para actualizar la posición del jugador en el juego
         function updatePlayerPosition(uid, position) {
             const playerElement = document.getElementById(uid);
             if (playerElement) {
-                playerElement.position.set(position.x, position.y, position.z);
+                playerElement.position.set(position.x, position.y, position.z); // Suponiendo que tengas un objeto 3D en Three.js
             }
         }
 
-        // Configuración inicial de la escena 3D
-        let scene, camera, renderer, player, playerId;
-        let playerSpeed = 0.1; // Velocidad de movimiento del jugador
-        let playerJumpHeight = 2; // Altura de salto
+        // Función para añadir a un jugador al juego
+        function addPlayerToGame(uid, position) {
+            const playerElement = new THREE.Mesh(
+                new THREE.SphereGeometry(1), // Representación 3D
+                new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff }) // Colores aleatorios
+            );
+            playerElement.position.set(position.x, position.y, position.z);
+            playerElement.id = uid;
+            scene.add(playerElement); // Agregar al escenario de Three.js
+
+            // Guardar en la base de datos de Firebase
+            set(ref(db, "players/" + uid), {
+                position: position
+            });
+        }
+
+        // Llamar a esta función cuando el jugador se mueva
+        function movePlayer(uid, position) {
+            const playerRef = ref(db, "players/" + uid);
+            update(playerRef, {
+                position: position
+            });
+        }
+
+        // Gráficos en 3D con Three.js
+        let scene, camera, renderer;
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
             renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Crear el jugador como una esfera
+            // Crear una esfera representando al jugador
             const geometry = new THREE.SphereGeometry(1, 32, 32);
             const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            player = new THREE.Mesh(geometry, material);
+            const player = new THREE.Mesh(geometry, material);
             scene.add(player);
 
             camera.position.z = 5;
 
-            // Crear una fuente de luz
-            const light = new THREE.AmbientLight(0x404040);
+            // Crear iluminación básica
+            const light = new THREE.AmbientLight(0x404040); // Luz suave
             scene.add(light);
 
-            // Animación de la escena
             const animate = function () {
                 requestAnimationFrame(animate);
                 renderer.render(scene, camera);
             };
 
             animate();
-
-            // Escuchar las teclas de movimiento (WASD)
-            document.addEventListener("keydown", onKeyDown);
-            document.addEventListener("keyup", onKeyUp);
         }
 
-        // Variables para control de movimiento
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, jump = false;
+        init();
 
-        // Funciones para los controles de teclado
-        function onKeyDown(event) {
-            switch (event.key) {
-                case "w":
-                    moveForward = true;
-                    break;
-                case "s":
-                    moveBackward = true;
-                    break;
-                case "a":
-                    moveLeft = true;
-                    break;
-                case "d":
-                    moveRight = true;
-                    break;
-                case " ":
-                    jump = true;
-                    break;
-            }
-        }
-
-        function onKeyUp(event) {
-            switch (event.key) {
-                case "w":
-                    moveForward = false;
-                    break;
-                case "s":
-                    moveBackward = false;
-                    break;
-                case "a":
-                    moveLeft = false;
-                    break;
-                case "d":
-                    moveRight = false;
-                    break;
-                case " ":
-                    jump = false;
-                    break;
-            }
-        }
-
-        // Actualizar la posición del jugador en la escena y Firebase
-        function updatePlayerPosition() {
-            if (moveForward) player.position.z -= playerSpeed;
-            if (moveBackward) player.position.z += playerSpeed;
-            if (moveLeft) player.position.x -= playerSpeed;
-            if (moveRight) player.position.x += playerSpeed;
-
-            if (jump && player.position.y <= 1) {
-                player.position.y += playerJumpHeight;
-            }
-
-            // Sincronizar la posición en Firebase
-            if (playerId) {
-                update(ref(db, "players/" + playerId), {
-                    position: {
-                        x: player.position.x,
-                        y: player.position.y,
-                        z: player.position.z
-                    }
-                });
-            }
-        }
-
-        // Eliminar jugadores desconectados (evitar jugadores fantasmas)
+        // Evitar jugadores fantasmas
         function removePlayerOnDisconnect(uid) {
             const playerRef = ref(db, "players/" + uid);
             playerRef.onDisconnect().remove();
         }
 
-        // Cargar otros jugadores en la escena 3D
+        // Sincronización en tiempo real de los movimientos
         function loadOtherPlayers() {
             const playersRef = ref(db, "players");
             onValue(playersRef, (snapshot) => {
@@ -213,11 +149,6 @@ const firebaseConfig = {
                 });
             });
         }
-
-        // Inicializar la escena
-        init();
-        updatePlayerPosition();
-
     </script>
 </head>
 <body>
