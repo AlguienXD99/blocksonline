@@ -10,20 +10,23 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js";
 
+        // Configuración de Firebase
         const firebaseConfig = { 
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.appspot.com",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const db = getDatabase(firebaseApp);
-        const auth = getAuth(firebaseApp);
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+        let players = {}; 
 
+        // Inicio de sesión
         document.getElementById("loginForm").addEventListener("submit", async (event) => {
             event.preventDefault();
             const email = document.getElementById("email").value;
@@ -58,18 +61,24 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            const baseplate = new THREE.Mesh(new THREE.BoxGeometry(20, 1, 20), new THREE.MeshBasicMaterial({ color: 0x808080 }));
+            // Crear base
+            const baseplate = new THREE.Mesh(
+                new THREE.BoxGeometry(20, 1, 20), 
+                new THREE.MeshBasicMaterial({ color: 0x808080 })
+            );
             baseplate.position.y = -1;
             scene.add(baseplate);
 
-            const players = {};
-
             function addPlayer(id, position) {
                 if (!players[id]) {
-                    const playerMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial({ color: id === playerId ? 0x00ff00 : 0xff0000 }));
+                    const playerMesh = new THREE.Mesh(
+                        new THREE.BoxGeometry(1, 2, 1), 
+                        new THREE.MeshBasicMaterial({ color: id === playerId ? 0x00ff00 : 0xff0000 })
+                    );
                     playerMesh.position.set(position.x, position.y, position.z);
                     scene.add(playerMesh);
                     players[id] = playerMesh;
+                    console.log(`Jugador ${id} agregado a la escena.`);
                 }
             }
 
@@ -77,25 +86,34 @@
                 if (players[id]) {
                     scene.remove(players[id]);
                     delete players[id];
+                    console.log(`Jugador ${id} eliminado.`);
                 }
             }
 
+            // Verificar jugadores en Firebase
             onValue(ref(db, "players"), (snapshot) => {
+                console.log("Jugadores en Firebase:", snapshot.val()); // Verificar datos
                 const updatedPlayers = {};
                 snapshot.forEach(child => {
                     const data = child.val();
+                    console.log(`Jugador detectado: ${child.key} en posición`, data.position);
                     if (data.connected) {
                         addPlayer(child.key, data.position);
                         players[child.key].position.set(data.position.x, data.position.y, data.position.z);
                         updatedPlayers[child.key] = true;
                     }
                 });
+
                 Object.keys(players).forEach(id => {
                     if (!updatedPlayers[id]) removePlayer(id);
                 });
             });
 
-            const player = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+            // Creación del jugador local
+            const player = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 2, 1), 
+                new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+            );
             scene.add(player);
             camera.position.set(0, 2, 5);
 
@@ -116,6 +134,7 @@
                     velocity.y = 0.5;
                     onGround = false;
                 }
+
                 velocity.y += gravity;
                 player.position.y += velocity.y;
                 if (player.position.y <= baseplate.position.y + 1) {
@@ -123,7 +142,12 @@
                     velocity.y = 0;
                     onGround = true;
                 }
-                set(ref(db, `players/${playerId}`), { position: { x: player.position.x, y: player.position.y, z: player.position.z }, connected: true });
+
+                // Actualizar en Firebase
+                set(ref(db, `players/${playerId}`), { 
+                    position: { x: player.position.x, y: player.position.y, z: player.position.z }, 
+                    connected: true 
+                });
             }
 
             function animate() {
@@ -132,6 +156,9 @@
                 renderer.render(scene, camera);
             }
             animate();
+
+            // Manejo de desconexión
+            onDisconnect(ref(db, `players/${playerId}`)).remove();
         }
     </script>
 </head>
