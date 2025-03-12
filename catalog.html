@@ -28,6 +28,14 @@
             border: none;
             cursor: pointer;
         }
+        #avatar {
+            width: 100px;
+            height: 200px;
+            background-color: #ccc; /* Color inicial del avatar */
+            margin-top: 20px;
+            border-radius: 20px;
+            display: block;
+        }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -74,6 +82,12 @@
                     console.log("No data available for this user.");
                 }
             });
+        }
+
+        // 🔹 Función para cambiar el color del avatar
+        function changeAvatarColor(color) {
+            const avatar = document.getElementById('avatar');
+            avatar.style.backgroundColor = color; // Cambiar color del fondo del avatar
         }
 
         // 🔹 Función para comprar artículos
@@ -149,6 +163,7 @@
         window.equipItem = equipItem;
         window.unequipItem = unequipItem;
         window.logout = logout;
+        window.changeAvatarColor = changeAvatarColor;
     </script>
 </head>
 <body>
@@ -194,5 +209,8 @@
         <button class="button" onclick="changeAvatarColor('blue')">Blue</button>
         <button class="button" onclick="changeAvatarColor('green')">Green</button>
     </div>
+
+    <!-- Avatar representation -->
+    <div id="avatar"></div>
 </body>
 </html>
