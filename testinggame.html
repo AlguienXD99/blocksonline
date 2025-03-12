@@ -11,15 +11,15 @@
         import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
         // Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
+        const firebaseConfig = {
+          apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+          authDomain: "virtualblocks-b7a52.firebaseapp.com",
+          databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+          projectId: "virtualblocks-b7a52",
+          storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+          messagingSenderId: "490618182453",
+          appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
@@ -27,9 +27,9 @@ const firebaseConfig = {
         // Escuchar cambios en la autenticación del usuario
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                loadUserData(user.uid);
-                loadOtherPlayers();
-                listenForPlayerMoves(user.uid);
+                loadUserData(user.uid); // Cargar datos del usuario
+                loadOtherPlayers(); // Cargar otros jugadores
+                listenForPlayerMoves(user.uid); // Escuchar movimientos del jugador
             } else {
                 window.location.href = "login.html"; // Redirigir si no está logueado
             }
@@ -43,8 +43,21 @@ const firebaseConfig = {
                     const data = snapshot.val();
                     const avatarColor = data.avatarConfig ? data.avatarConfig.color : "gray";
                     updateAvatarAppearance(data.nickname, avatarColor);
+                } else {
+                    // Si no existe, crear los datos del usuario
+                    createUser(uid);
                 }
             });
+        }
+
+        // Crear los datos del usuario si no existen
+        function createUser(uid) {
+            const newUser = {
+                nickname: "Jugador_" + uid,
+                avatarConfig: { color: "blue" }
+            };
+            set(ref(db, "users/" + uid), newUser);
+            updateAvatarAppearance(newUser.nickname, newUser.avatarConfig.color);
         }
 
         // Función para actualizar la apariencia del avatar
@@ -60,7 +73,17 @@ const firebaseConfig = {
                 if (snapshot.exists()) {
                     const playerData = snapshot.val();
                     updatePlayerPosition(uid, playerData.position);
+                } else {
+                    // Si el jugador no existe, crear la entrada en la base de datos
+                    createPlayer(uid, { x: 0, y: 1, z: 0 });
                 }
+            });
+        }
+
+        // Crear un jugador en la base de datos
+        function createPlayer(uid, position) {
+            set(ref(db, "players/" + uid), {
+                position: position
             });
         }
 
