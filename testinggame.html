@@ -4,19 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BLOCKSONLINE</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-</head>
-<body style="margin:0; overflow:hidden;">
-    <button id="closeGame" style="position: absolute; top: 10px; left: 10px;">Close game</button>
-
-    <script>
-        document.getElementById("closeGame").addEventListener("click", () => {
-            location.reload(); // Simula cerrar el juego
-        });
-
-        // Configuración de Firebase
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
             authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -27,82 +18,48 @@
             appId: "1:490618182453:web:93385819c7ff08537d8a7c"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        let playerId = Math.random().toString(36).substr(2, 9);
+        const playerRef = ref(db, `players/${playerId}`);
+        set(playerRef, { position: { x: 0, y: 1, z: 0 }, connected: true });
 
-        // Crear la escena con Three.js
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        window.addEventListener("beforeunload", () => remove(playerRef));
+        
+        import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js";
 
-        // Pantalla de carga
-        const loadingText = document.createElement('div');
-        loadingText.innerHTML = "Loading bricks: 0/10000";
-        Object.assign(loadingText.style, {
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: '24px',
-            color: 'white'
-        });
-        document.body.appendChild(loadingText);
-
-        let bricksLoaded = 0;
-        const totalBricks = 10000;
-
-        function loadBricks() {
-            bricksLoaded += Math.floor(Math.random() * 500);
-            if (bricksLoaded >= totalBricks) {
-                bricksLoaded = totalBricks;
-                document.body.removeChild(loadingText);
-                startGame();
-            } else {
-                loadingText.innerHTML = `Loading bricks: ${bricksLoaded}/${totalBricks}`;
-                setTimeout(loadBricks, 200);
-            }
-        }
-
-        loadBricks();
+        document.body.innerHTML = '<div id="loading">Cargando...</div>';
+        setTimeout(() => {
+            document.getElementById("loading").remove();
+            startGame();
+        }, 2000);
 
         function startGame() {
-            // Baseplate
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
             const baseGeometry = new THREE.BoxGeometry(20, 1, 20);
             const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x808080 });
             const baseplate = new THREE.Mesh(baseGeometry, baseMaterial);
             baseplate.position.y = -1;
             scene.add(baseplate);
 
-            // Jugador
             const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
             const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const player = new THREE.Mesh(playerGeometry, playerMaterial);
             scene.add(player);
             camera.position.set(0, 2, 5);
 
+            let keys = {};
             let velocity = { x: 0, y: 0, z: 0 };
             const gravity = -0.02;
             const jumpStrength = 0.5;
             let onGround = false;
-            const spawnPosition = { x: 0, y: 1, z: 0 };
-            player.position.set(spawnPosition.x, spawnPosition.y, spawnPosition.z);
 
-            // Conectar jugador a Firebase
-            const tempUserId = `user_${Math.random().toString(36).substr(2, 9)}`;
-            const playerRef = db.ref('players/' + tempUserId);
-            playerRef.set({ position: spawnPosition });
-
-            // Desconectar tras 20 min
-            setTimeout(() => {
-                playerRef.remove();
-                alert("Fuiste desconectado por inactividad");
-                location.reload();
-            }, 20 * 60 * 1000);
-
-            // Movimiento con teclado
-            const keys = {};
             window.addEventListener("keydown", (event) => keys[event.key] = true);
             window.addEventListener("keyup", (event) => keys[event.key] = false);
 
@@ -111,6 +68,7 @@
                 if (keys['s']) player.position.z += 0.1;
                 if (keys['a']) player.position.x -= 0.1;
                 if (keys['d']) player.position.x += 0.1;
+
                 if (keys[' '] && onGround) {
                     velocity.y = jumpStrength;
                     onGround = false;
@@ -118,6 +76,7 @@
 
                 velocity.y += gravity;
                 player.position.y += velocity.y;
+
                 if (player.position.y <= baseplate.position.y + 1) {
                     player.position.y = baseplate.position.y + 1;
                     velocity.y = 0;
@@ -125,37 +84,50 @@
                 }
 
                 if (player.position.y < -10) {
-                    player.position.set(spawnPosition.x, spawnPosition.y, spawnPosition.z);
+                    player.position.set(0, 1, 0);
                     velocity.y = 0;
                 }
 
-                playerRef.set({ position: player.position });
+                set(playerRef, { position: { x: player.position.x, y: player.position.y, z: player.position.z }, connected: true });
             }
 
-            // Actualizar jugadores en tiempo real
-            db.ref('players').on('value', (snapshot) => {
-                snapshot.forEach((child) => {
-                    if (child.key !== tempUserId) {
-                        let otherPlayer = scene.getObjectByName(child.key);
-                        if (!otherPlayer) {
-                            const newPlayer = new THREE.Mesh(playerGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-                            newPlayer.name = child.key;
-                            scene.add(newPlayer);
-                        }
-                        scene.getObjectByName(child.key).position.set(
-                            child.val().position.x, child.val().position.y, child.val().position.z
-                        );
+            function updateLeaderboard() {
+                get(ref(db, "players")).then((snapshot) => {
+                    let leaderboard = document.getElementById("leaderboard");
+                    if (!leaderboard) {
+                        leaderboard = document.createElement("div");
+                        leaderboard.id = "leaderboard";
+                        leaderboard.style.position = "absolute";
+                        leaderboard.style.top = "10px";
+                        leaderboard.style.right = "10px";
+                        leaderboard.style.backgroundColor = "white";
+                        leaderboard.style.padding = "10px";
+                        document.body.appendChild(leaderboard);
                     }
+                    leaderboard.innerHTML = "<b>Jugadores Conectados:</b><br>";
+                    snapshot.forEach(child => {
+                        const player = child.val();
+                        if (player.connected) {
+                            leaderboard.innerHTML += `Jugador ${child.key}<br>`;
+                        }
+                    });
                 });
-            });
+            }
 
             function animate() {
                 requestAnimationFrame(animate);
                 updatePlayer();
+                updateLeaderboard();
                 renderer.render(scene, camera);
             }
             animate();
         }
+    </script>
+</head>
+<body style="margin:0; overflow:hidden;">
+    <button id="closeGame" style="position: absolute; top: 10px; left: 10px;">Cerrar juego</button>
+    <script>
+        document.getElementById("closeGame").addEventListener("click", () => location.reload());
     </script>
 </body>
 </html>
