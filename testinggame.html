@@ -6,12 +6,33 @@
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
+        #login-form { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7); 
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+        input { margin: 10px; }
+        button { padding: 10px; }
     </style>
 </head>
 <body>
+    <div id="login-form">
+        <h2>Iniciar sesión</h2>
+        <input type="email" id="email" placeholder="Correo electrónico" required /><br>
+        <input type="password" id="password" placeholder="Contraseña" required /><br>
+        <button id="login-button">Iniciar sesión</button>
+        <p id="error-message" style="color: red;"></p>
+    </div>
+
     <script type="module">
         // Importar Firebase desde el CDN (modular)
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js';
         import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js';
 
         // Configuración de Firebase
@@ -28,77 +49,104 @@
         // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app);
 
-        // Configurar escena Three.js
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        // Muestra el formulario de login
+        const loginForm = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
 
-        // Crear cubo (personaje) como avatar
-        let playerId = "player1"; // Este ID será único para cada jugador
-        let characterGeometry = new THREE.BoxGeometry(1, 1, 1);
-        let characterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        let character = new THREE.Mesh(characterGeometry, characterMaterial);
-        scene.add(character);
+        // Función para autenticar al usuario
+        const loginButton = document.getElementById('login-button');
+        loginButton.addEventListener('click', () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    // El usuario ha iniciado sesión correctamente
+                    loginForm.style.display = 'none'; // Ocultar el formulario de login
+                    initializeGame(userCredential.user.uid); // Iniciar el juego
+                })
+                .catch((error) => {
+                    // Si hay un error al iniciar sesión
+                    const errorCode = error.code;
+                    const errorMessageText = error.message;
+                    errorMessage.textContent = errorMessageText; // Mostrar mensaje de error
+                });
+        });
 
-        // Posición inicial de la cámara
-        camera.position.z = 5;
+        // Función para inicializar el juego después de la autenticación
+        function initializeGame(playerId) {
+            // Configurar escena Three.js
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-        // Guardar posición del jugador en Firebase
-        function updatePosition(playerId, position) {
-            set(ref(db, 'players/' + playerId), {
-                x: position.x,
-                y: position.y,
-                z: position.z
+            // Crear cubo (personaje) como avatar
+            let characterGeometry = new THREE.BoxGeometry(1, 1, 1);
+            let characterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            let character = new THREE.Mesh(characterGeometry, characterMaterial);
+            scene.add(character);
+
+            // Posición inicial de la cámara
+            camera.position.z = 5;
+
+            // Guardar posición del jugador en Firebase
+            function updatePosition(playerId, position) {
+                set(ref(db, 'players/' + playerId), {
+                    x: position.x,
+                    y: position.y,
+                    z: position.z
+                });
+            }
+
+            // Leer posiciones de otros jugadores en Firebase
+            const players = {}; // Guardamos los jugadores en un mapa
+            onValue(ref(db, 'players'), (snapshot) => {
+                const playersData = snapshot.val();
+                for (let playerId in playersData) {
+                    const player = playersData[playerId];
+                    if (!players[playerId]) {
+                        // Crear un nuevo jugador si no existe
+                        let otherPlayer = new THREE.Mesh(
+                            new THREE.BoxGeometry(1, 1, 1),
+                            new THREE.MeshBasicMaterial({ color: 0x0000ff })
+                        );
+                        players[playerId] = otherPlayer;
+                        scene.add(otherPlayer);
+                    }
+                    // Actualizar la posición de los jugadores
+                    players[playerId].position.set(player.x, player.y, player.z);
+                }
+            });
+
+            // Movimiento básico del personaje con las teclas
+            let moveSpeed = 0.1;
+            window.addEventListener("keydown", (event) => {
+                if (event.key === "ArrowUp") character.position.z -= moveSpeed;
+                if (event.key === "ArrowDown") character.position.z += moveSpeed;
+                if (event.key === "ArrowLeft") character.position.x -= moveSpeed;
+                if (event.key === "ArrowRight") character.position.x += moveSpeed;
+                // Actualizar la posición en Firebase
+                updatePosition(playerId, character.position);
+            });
+
+            // Animación del juego
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Ajuste del tamaño de la ventana
+            window.addEventListener("resize", () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
             });
         }
-
-        // Leer posiciones de otros jugadores en Firebase
-        const players = {}; // Guardamos los jugadores en un mapa
-        onValue(ref(db, 'players'), (snapshot) => {
-            const playersData = snapshot.val();
-            for (let playerId in playersData) {
-                const player = playersData[playerId];
-                if (!players[playerId]) {
-                    // Crear un nuevo jugador si no existe
-                    let otherPlayer = new THREE.Mesh(
-                        new THREE.BoxGeometry(1, 1, 1),
-                        new THREE.MeshBasicMaterial({ color: 0x0000ff })
-                    );
-                    players[playerId] = otherPlayer;
-                    scene.add(otherPlayer);
-                }
-                // Actualizar la posición de los jugadores
-                players[playerId].position.set(player.x, player.y, player.z);
-            }
-        });
-
-        // Movimiento básico del personaje con las teclas
-        let moveSpeed = 0.1;
-        window.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowUp") character.position.z -= moveSpeed;
-            if (event.key === "ArrowDown") character.position.z += moveSpeed;
-            if (event.key === "ArrowLeft") character.position.x -= moveSpeed;
-            if (event.key === "ArrowRight") character.position.x += moveSpeed;
-            // Actualizar la posición en Firebase
-            updatePosition(playerId, character.position);
-        });
-
-        // Animación del juego
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Ajuste del tamaño de la ventana
-        window.addEventListener("resize", () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 
     <!-- Cargar Three.js -->
