@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VirtualBlocks Multiplayer</title>
     <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three';
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js';
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js';
         import { getDatabase, ref, onValue, set, remove } from 'https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js';
@@ -107,7 +107,7 @@
 
             set(playerRef, pos);
         });
-
+    window.login = login;
     </script>
 </head>
 <body>
