@@ -6,10 +6,10 @@
     <title>BLOCKSONLINE</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, update, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, update, onChildAdded, onChildChanged, onChildRemoved, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js";
-        
+
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
             authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -19,7 +19,7 @@
             messagingSenderId: "490618182453",
             appId: "1:490618182453:web:93385819c7ff08537d8a7c"
         };
-        
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
@@ -51,12 +51,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            const textureLoader = new THREE.TextureLoader();
-            const baseTexture = textureLoader.load("blocky_texture.png");
-
             const baseplate = new THREE.Mesh(
                 new THREE.BoxGeometry(20, 1, 20),
-                new THREE.MeshBasicMaterial({ map: baseTexture })
+                new THREE.MeshBasicMaterial({ color: 0x888888 })
             );
             baseplate.position.y = -1;
             scene.add(baseplate);
@@ -80,18 +77,26 @@
                 }
             }
 
-            onValue(ref(db, "players"), (snapshot) => {
-                const updatedPlayers = {};
-                snapshot.forEach(child => {
-                    const data = child.val();
-                    if (data.connected) {
-                        addPlayer(child.key, data.position);
-                        updatedPlayers[child.key] = true;
+            onChildAdded(ref(db, "players"), (snapshot) => {
+                const data = snapshot.val();
+                if (data.connected) addPlayer(snapshot.key, data.position);
+            });
+
+            onChildChanged(ref(db, "players"), (snapshot) => {
+                const data = snapshot.val();
+                if (data.connected) {
+                    if (players[snapshot.key]) {
+                        players[snapshot.key].position.set(data.position.x, data.position.y, data.position.z);
+                    } else {
+                        addPlayer(snapshot.key, data.position);
                     }
-                });
-                Object.keys(players).forEach(id => {
-                    if (!updatedPlayers[id]) removePlayer(id);
-                });
+                } else {
+                    removePlayer(snapshot.key);
+                }
+            });
+
+            onChildRemoved(ref(db, "players"), (snapshot) => {
+                removePlayer(snapshot.key);
             });
 
             const player = new THREE.Mesh(
@@ -125,9 +130,22 @@
                     velocity.y = 0;
                     onGround = true;
                 }
+
                 update(ref(db, `players/${playerId}`), {
                     position: { x: player.position.x, y: player.position.y, z: player.position.z },
                     connected: true
+                });
+            }
+
+            function countActivePlayers() {
+                onChildAdded(ref(db, "players"), (snapshot) => {
+                    let playerCount = Object.keys(players).length - 1;
+                    console.log(`Otros jugadores activos: ${playerCount}`);
+                });
+
+                onChildRemoved(ref(db, "players"), (snapshot) => {
+                    let playerCount = Object.keys(players).length - 1;
+                    console.log(`Otros jugadores activos: ${playerCount}`);
                 });
             }
 
@@ -137,8 +155,11 @@
                 renderer.render(scene, camera);
             }
             animate();
+            countActivePlayers();
 
-            onDisconnect(ref(db, `players/${playerId}`)).remove();
+            onDisconnect(ref(db, `players/${playerId}`)).update({ connected: false }).then(() => {
+                remove(ref(db, `players/${playerId}`));
+            });
         }
     </script>
 </head>
