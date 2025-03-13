@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -93,32 +93,30 @@
     </audio>
     <button onclick="window.close();">Salir del juego</button>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <!-- Firebase SDK con módulos -->
+    <script type="module">
+        // Importación de Firebase desde CDN
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js';
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
-    
-    <script>
         // Configuración de Firebase
-     const firebaseConfig = {
-         apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-         authDomain: "virtualblocks-b7a52.firebaseapp.com",
-         databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-         projectId: "virtualblocks-b7a52",
-         storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-         messagingSenderId: "490618182453",
-         appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-      };
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database(app);
+const firebaseConfig = {
+  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+  authDomain: "virtualblocks-b7a52.firebaseapp.com",
+  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+  projectId: "virtualblocks-b7a52",
+  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  messagingSenderId: "490618182453",
+  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
         // Generar un ID único para el jugador
         const playerId = Math.random().toString(36).substr(2, 9); // ID único para cada jugador
 
         // Referencia en la base de datos para los jugadores
-        const playersRef = database.ref('players/' + playerId);
+        const playersRef = ref(database, 'players/' + playerId);
 
         // Configuración básica de Three.js
         const scene = new THREE.Scene();
@@ -176,7 +174,7 @@
 
         // Función para actualizar la posición del jugador en Firebase
         function updatePlayerPosition() {
-            playersRef.set({
+            set(playersRef, {
                 position: {
                     x: player.position.x,
                     y: player.position.y,
@@ -187,7 +185,7 @@
         }
 
         // Detectar la posición del jugador en Firebase
-        playersRef.on('value', (snapshot) => {
+        onValue(playersRef, (snapshot) => {
             const data = snapshot.val();
             if (data && data.position) {
                 // Actualizar la posición del jugador desde Firebase
