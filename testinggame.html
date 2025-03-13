@@ -1,268 +1,102 @@
-<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiplayer Blockbase - Virtualblocks</title>
+    <title>Juego VirtualBlocks</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            height: 100%; 
-            background-color: #87CEEB; /* Fondo azul cielo */
-        }
-
-        canvas { 
-            display: block; 
-        }
-
-        /* Estilos para los botones de control */
-        .mobile-controls {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .control-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            margin: 5px;
-        }
-
-        /* Botones de control (Izquierda, Derecha, Arriba, Abajo, Salto) */
-        #moveLeft { float: left; }
-        #moveRight { float: right; }
-        #moveUp { clear: both; }
-        #moveDown { float: left; }
-
-        /* Estilos para el botón de reportar */
-        #reportButton {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            padding: 10px 20px;
-            background-color: #ff6347;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* Estilos para el formulario de reporte */
-        #reportForm {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            z-index: 1000;
-            display: none;
-            background-color: white;
-            padding: 20px;
-            border: 1px solid #000;
-            border-radius: 5px;
-        }
-
-        #reportDescription {
-            width: 300px;
-            height: 100px;
-        }
-
-        button {
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:disabled {
-            background-color: #ccc;
-        }
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <audio autoplay loop muted>
-    <source src="https://gitlab.com/AlguienXD99/createfuntv/-/raw/main/punch.mp3" type="audio/mp3">
-    Tu navegador no soporta el elemento de audio.
-    </audio>
-    <button onclick="window.close();">Salir del juego</button>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js"></script>
+    <script>
+        // Configurar Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7d"
+        };
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    <!-- Agregar la librería Three.js desde el CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <!-- Firebase SDK con módulos -->
-    <script type="module">
-        // Importación de Firebase desde CDN
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js';
-
-        // Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
-
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        // Generar un ID único para el jugador
-        const playerId = Math.random().toString(36).substr(2, 9); // ID único para cada jugador
-
-        // Referencia en la base de datos para los jugadores
-        const playersRef = ref(database, 'players/' + playerId);
-
-        // Configuración básica de Three.js
+        // Configurar escena Three.js
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Agregar luces
-        const ambientLight = new THREE.AmbientLight(0x404040); // Luz suave
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // Luz direccional
-        directionalLight.position.set(5, 10, 5).normalize();
-        scene.add(ambientLight);
-        scene.add(directionalLight);
+        // Crear cubo (personaje) como avatar
+        let playerId = "player1"; // Este ID será único para cada jugador
+        let characterGeometry = new THREE.BoxGeometry(1, 1, 1);
+        let characterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        let character = new THREE.Mesh(characterGeometry, characterMaterial);
+        scene.add(character);
 
-        // Crear el plano del suelo (baseplate)
-        const baseplateGeometry = new THREE.PlaneGeometry(100, 100);
-        const baseplateMaterial = new THREE.MeshLambertMaterial({ color: 0x808080, side: THREE.DoubleSide });
-        const baseplate = new THREE.Mesh(baseplateGeometry, baseplateMaterial);
-        baseplate.rotation.x = - Math.PI / 2;
-        baseplate.position.y = -1;
-        scene.add(baseplate);
+        // Posición inicial de la cámara
+        camera.position.z = 5;
 
-        // Crear cuerpo del personaje (cabeza, torso, piernas)
-        const bodyGeometry = new THREE.BoxGeometry(1, 2, 1);
-        const headGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-        const legsGeometry = new THREE.BoxGeometry(0.8, 1, 1);
-        const armsGeometry = new THREE.BoxGeometry(0.5, 1.5, 2);
-
-        // Materiales iniciales
-        const bodyMaterial = new THREE.MeshLambertMaterial({ color: '#00ff00' });
-        let headMaterial = new THREE.MeshBasicMaterial({ color: '#f0f0f0' }); // Color predeterminado
-        const legsMaterial = new THREE.MeshLambertMaterial({ color: '#ff0000' });
-        const armsMaterial = new THREE.MeshLambertMaterial({ color: '#ff0000' });
-
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        body.position.set(0, 1, 0);
-
-        const head = new THREE.Mesh(headGeometry, headMaterial);
-        head.position.set(0, 2.3, 0);
-
-        const legs = new THREE.Mesh(legsGeometry, legsMaterial);
-        legs.position.set(0, -0.5, 0);
-        
-        const arms = new THREE.Mesh(armsGeometry, armsMaterial);
-        arms.position.set(0, 1.2, 0);
-
-        // Agrupar partes del cuerpo
-        const player = new THREE.Group();
-        player.add(body);
-        player.add(head);
-        player.add(legs);
-        player.add(arms);
-        scene.add(player);
-
-        // Definir las variables de movimiento
-        let moveForward = false;
-        let moveBackward = false;
-        let moveLeft = false;
-        let moveRight = false;
-        let isJumping = false;
-        const speed = 0.1;
-        const jumpHeight = 1;
-        const originalY = player.position.y;
-
-        // Función para actualizar la posición del jugador en Firebase
-        function updatePlayerPosition() {
-            set(playersRef, {
-                position: {
-                    x: player.position.x,
-                    y: player.position.y,
-                    z: player.position.z,
-                    rotationY: player.rotation.y
-                }
+        // Guardar posición del jugador en Firebase
+        function updatePosition(playerId, position) {
+            db.ref("players/" + playerId).set({
+                x: position.x,
+                y: position.y,
+                z: position.z
             });
         }
 
-        // Detectar la posición del jugador en Firebase
-        onValue(playersRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data && data.position) {
-                // Actualizar la posición del jugador desde Firebase
-                player.position.set(data.position.x, data.position.y, data.position.z);
-                player.rotation.y = data.position.rotationY;
-            }
-        });
-
-        // Agregar control de teclas
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'w') {
-                moveForward = true;
-            } else if (event.key === 's') {
-                moveBackward = true;
-            } else if (event.key === 'a') {
-                moveLeft = true;
-            } else if (event.key === 'd') {
-                moveRight = true;
-            } else if (event.key === ' ') {
-                if (!isJumping) {
-                    isJumping = true;
+        // Leer posiciones de otros jugadores en Firebase
+        const players = {}; // Guardamos los jugadores en un mapa
+        db.ref("players").on("value", (snapshot) => {
+            const playersData = snapshot.val();
+            for (let playerId in playersData) {
+                const player = playersData[playerId];
+                if (!players[playerId]) {
+                    // Crear un nuevo jugador si no existe
+                    let otherPlayer = new THREE.Mesh(
+                        new THREE.BoxGeometry(1, 1, 1),
+                        new THREE.MeshBasicMaterial({ color: 0x0000ff })
+                    );
+                    players[playerId] = otherPlayer;
+                    scene.add(otherPlayer);
                 }
+                // Actualizar la posición de los jugadores
+                players[playerId].position.set(player.x, player.y, player.z);
             }
         });
 
-        document.addEventListener('keyup', (event) => {
-            if (event.key === 'w') {
-                moveForward = false;
-            } else if (event.key === 's') {
-                moveBackward = false;
-            } else if (event.key === 'a') {
-                moveLeft = false;
-            } else if (event.key === 'd') {
-                moveRight = false;
-            }
-        });
-
-        // Función de actualización
-        function update() {
-            // Movimiento del jugador
-            if (moveForward) player.position.z -= speed;
-            if (moveBackward) player.position.z += speed;
-            if (moveLeft) player.position.x -= speed;
-            if (moveRight) player.position.x += speed;
-
-            if (isJumping) {
-                player.position.y += 0.1; // Salto
-                if (player.position.y >= originalY + jumpHeight) {
-                    isJumping = false;
-                }
-            } else if (player.position.y > originalY) {
-                player.position.y -= 0.1; // Caída
-            }
-
+        // Movimiento básico del personaje con las teclas
+        let moveSpeed = 0.1;
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowUp") character.position.z -= moveSpeed;
+            if (event.key === "ArrowDown") character.position.z += moveSpeed;
+            if (event.key === "ArrowLeft") character.position.x -= moveSpeed;
+            if (event.key === "ArrowRight") character.position.x += moveSpeed;
             // Actualizar la posición en Firebase
-            updatePlayerPosition();
+            updatePosition(playerId, character.position);
+        });
 
+        // Animación del juego
+        function animate() {
+            requestAnimationFrame(animate);
             renderer.render(scene, camera);
-            requestAnimationFrame(update);
         }
+        animate();
 
-        camera.position.z = 5;
-        update();
+        // Ajuste del tamaño de la ventana
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
