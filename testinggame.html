@@ -112,6 +112,7 @@ const firebaseConfig = {
   messagingSenderId: "490618182453",
   appId: "1:490618182453:web:93385819c7ff08537d8a7c"
 };
+
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
@@ -175,6 +176,16 @@ const firebaseConfig = {
         player.add(arms);
         scene.add(player);
 
+        // Definir las variables de movimiento
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+        let isJumping = false;
+        const speed = 0.1;
+        const jumpHeight = 1;
+        const originalY = player.position.y;
+
         // Función para actualizar la posición del jugador en Firebase
         function updatePlayerPosition() {
             set(playersRef, {
@@ -194,6 +205,35 @@ const firebaseConfig = {
                 // Actualizar la posición del jugador desde Firebase
                 player.position.set(data.position.x, data.position.y, data.position.z);
                 player.rotation.y = data.position.rotationY;
+            }
+        });
+
+        // Agregar control de teclas
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'w') {
+                moveForward = true;
+            } else if (event.key === 's') {
+                moveBackward = true;
+            } else if (event.key === 'a') {
+                moveLeft = true;
+            } else if (event.key === 'd') {
+                moveRight = true;
+            } else if (event.key === ' ') {
+                if (!isJumping) {
+                    isJumping = true;
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'w') {
+                moveForward = false;
+            } else if (event.key === 's') {
+                moveBackward = false;
+            } else if (event.key === 'a') {
+                moveLeft = false;
+            } else if (event.key === 'd') {
+                moveRight = false;
             }
         });
 
@@ -217,7 +257,6 @@ const firebaseConfig = {
             // Actualizar la posición en Firebase
             updatePlayerPosition();
 
-            controls.update();
             renderer.render(scene, camera);
             requestAnimationFrame(update);
         }
