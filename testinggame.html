@@ -6,7 +6,7 @@
     <title>BLOCKSONLINE</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, update, onValue, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js";
 
@@ -72,10 +72,10 @@
                         new THREE.BoxGeometry(1, 2, 1), 
                         new THREE.MeshBasicMaterial({ color: id === playerId ? 0x00ff00 : 0xff0000 })
                     );
-                    playerMesh.position.set(position.x, position.y, position.z);
                     scene.add(playerMesh);
                     players[id] = playerMesh;
                 }
+                players[id].position.set(position.x, position.y, position.z);
             }
 
             function removePlayer(id) {
@@ -86,12 +86,12 @@
             }
 
             onValue(ref(db, "players"), (snapshot) => {
+                console.log("Datos recibidos de Firebase:", snapshot.val());
                 const updatedPlayers = {};
                 snapshot.forEach(child => {
                     const data = child.val();
                     if (data.connected) {
                         addPlayer(child.key, data.position);
-                        players[child.key].position.set(data.position.x, data.position.y, data.position.z);
                         updatedPlayers[child.key] = true;
                     }
                 });
@@ -134,7 +134,7 @@
                     onGround = true;
                 }
 
-                set(ref(db, `players/${playerId}`), { 
+                update(ref(db, `players/${playerId}`), { 
                     position: { x: player.position.x, y: player.position.y, z: player.position.z }, 
                     connected: true 
                 });
