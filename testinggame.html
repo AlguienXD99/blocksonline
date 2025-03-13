@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body{
+            text-align: center;
+            font-family: Arial;
+            background-color: #92c4fa;
+        }
+    </style>
     <title>BLOCKSONLINE</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -45,7 +52,7 @@
         });
 
         function startGame(playerId) {
-            document.body.innerHTML = '<div id="loading">Cargando...</div>';
+            document.body.innerHTML = '<div id="loading">Loading blocks...</div>';
             setTimeout(() => {
                 document.getElementById("loading").remove();
                 initGame(playerId);
