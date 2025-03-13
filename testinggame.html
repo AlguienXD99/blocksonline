@@ -15,7 +15,7 @@
             authDomain: "virtualblocks-b7a52.firebaseapp.com",
             databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
             projectId: "virtualblocks-b7a52",
-            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
             messagingSenderId: "490618182453",
             appId: "1:490618182453:web:93385819c7ff08537d8a7c"
         };
@@ -93,17 +93,21 @@
 
         document.addEventListener('keydown', (event) => {
             if (!currentUser || !players[currentUser.uid]) return;
+            
             const playerRef = ref(db, `/players/${currentUser.uid}/position`);
             const speed = 0.1;
-            let pos = players[currentUser.uid].position;
-            
-            if (event.key === 'w') pos.z -= speed;
-            if (event.key === 's') pos.z += speed;
-            if (event.key === 'a') pos.x -= speed;
-            if (event.key === 'd') pos.x += speed;
-            
-            set(playerRef, { x: pos.x, y: pos.y, z: pos.z });
+            let pos = { ...players[currentUser.uid].position };
+
+            switch (event.key.toLowerCase()) {
+                case 'w': pos.z -= speed; break;
+                case 's': pos.z += speed; break;
+                case 'a': pos.x -= speed; break;
+                case 'd': pos.x += speed; break;
+            }
+
+            set(playerRef, pos);
         });
+
     </script>
 </head>
 <body>
