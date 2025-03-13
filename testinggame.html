@@ -24,16 +24,30 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        camera.position.z = 5;
-
-        const players = {};
+        let scene, camera, renderer;
+        let players = {};
         let currentUser = null;
+
+        function initGame() {
+            document.body.innerHTML = ''; // Borra el formulario
+
+            // Crear escena
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Posición de la cámara
+            camera.position.set(0, 2, 5);
+            camera.lookAt(0, 0, 0);
+
+            // Agregar una luz ambiental
+            const light = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(light);
+
+            animate();
+        }
 
         function createCube(color) {
             const geometry = new THREE.BoxGeometry();
@@ -61,18 +75,16 @@
             }
         }
 
-        onValue(ref(db, '/players'), updatePlayers);
-
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
-        animate();
 
         function login(email, password) {
             signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
                     currentUser = userCredential.user;
+                    initGame();
                     const playerRef = ref(db, `/players/${currentUser.uid}`);
                     set(playerRef, { nickname: currentUser.email, color: 0x0000ff, position: { x: 0, y: 0, z: 0 } });
                 })
@@ -82,14 +94,16 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+                initGame();
                 set(ref(db, `/players/${user.uid}`), { nickname: user.email, color: 0x0000ff, position: { x: 0, y: 0, z: 0 } });
-            } else if (currentUser) {
-                remove(ref(db, `/players/${currentUser.uid}`));
+                onValue(ref(db, '/players'), updatePlayers);
+            } else {
+                if (currentUser) {
+                    remove(ref(db, `/players/${currentUser.uid}`));
+                }
                 currentUser = null;
             }
         });
-
-        window.login = login;
 
         document.addEventListener('keydown', (event) => {
             if (!currentUser || !players[currentUser.uid]) return;
@@ -107,7 +121,8 @@
 
             set(playerRef, pos);
         });
-    window.login = login;
+
+        window.login = login;
     </script>
 </head>
 <body>
