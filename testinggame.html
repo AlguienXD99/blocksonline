@@ -3,13 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body{
-            text-align: center;
-            font-family: Arial;
-            background-color: #92c4fa;
-        }
-    </style>
     <title>BLOCKSONLINE</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -31,7 +24,7 @@
         const db = getDatabase(app);
         const auth = getAuth(app);
         let players = {};
-
+        
         document.getElementById("loginForm").addEventListener("submit", async (event) => {
             event.preventDefault();
             const email = document.getElementById("email").value;
@@ -47,17 +40,9 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById("loginContainer").style.display = "none";
-                startGame(user.uid);
+                initGame(user.uid);
             }
         });
-
-        function startGame(playerId) {
-            document.body.innerHTML = '<div id="loading">Loading blocks...</div>';
-            setTimeout(() => {
-                document.getElementById("loading").remove();
-                initGame(playerId);
-            }, 2000);
-        }
 
         function initGame(playerId) {
             const scene = new THREE.Scene();
