@@ -9,11 +9,12 @@
     </style>
 </head>
 <body>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js"></script>
-    <script>
-        // Configurar Firebase
+    <script type="module">
+        // Importar Firebase desde el CDN (modular)
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js';
+        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js';
+
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
             authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -21,11 +22,12 @@
             projectId: "virtualblocks-b7a52",
             storageBucket: "virtualblocks-b7a52.firebasestorage.app",
             messagingSenderId: "490618182453",
-            appId: "1:490618182453:web:93385819c7ff08537d8a7d"
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
         };
+
         // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
 
         // Configurar escena Three.js
         const scene = new THREE.Scene();
@@ -46,7 +48,7 @@
 
         // Guardar posición del jugador en Firebase
         function updatePosition(playerId, position) {
-            db.ref("players/" + playerId).set({
+            set(ref(db, 'players/' + playerId), {
                 x: position.x,
                 y: position.y,
                 z: position.z
@@ -55,7 +57,7 @@
 
         // Leer posiciones de otros jugadores en Firebase
         const players = {}; // Guardamos los jugadores en un mapa
-        db.ref("players").on("value", (snapshot) => {
+        onValue(ref(db, 'players'), (snapshot) => {
             const playersData = snapshot.val();
             for (let playerId in playersData) {
                 const player = playersData[playerId];
@@ -98,5 +100,8 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
+
+    <!-- Cargar Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 </body>
 </html>
