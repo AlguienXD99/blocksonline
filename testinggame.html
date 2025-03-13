@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -30,126 +31,102 @@
     </div>
 
     <script type="module">
-        // Importar Firebase desde el CDN (modular)
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js';
-        import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js';
+        import { getDatabase, ref, set, onValue, remove } from 'https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js';
 
-        // Configuración de Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            apiKey: "API_KEY",
             authDomain: "virtualblocks-b7a52.firebaseapp.com",
             databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
             projectId: "virtualblocks-b7a52",
-            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
             messagingSenderId: "490618182453",
-            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+            appId: "APP_ID"
         };
 
-        // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        // Muestra el formulario de login
         const loginForm = document.getElementById('login-form');
         const errorMessage = document.getElementById('error-message');
 
-        // Función para autenticar al usuario
-        const loginButton = document.getElementById('login-button');
-        loginButton.addEventListener('click', () => {
+        document.getElementById('login-button').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
             signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
-                    // El usuario ha iniciado sesión correctamente
-                    loginForm.style.display = 'none'; // Ocultar el formulario de login
-                    initializeGame(userCredential.user.uid); // Iniciar el juego
+                    loginForm.style.display = 'none';
+                    initializeGame(userCredential.user.uid);
                 })
                 .catch((error) => {
-                    // Si hay un error al iniciar sesión
-                    const errorCode = error.code;
-                    const errorMessageText = error.message;
-                    errorMessage.textContent = errorMessageText; // Mostrar mensaje de error
+                    errorMessage.textContent = error.message;
                 });
         });
 
-        // Función para inicializar el juego después de la autenticación
         function initializeGame(playerId) {
-            // Configurar escena Three.js
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Crear cubo (personaje) como avatar
-            let characterGeometry = new THREE.BoxGeometry(1, 1, 1);
-            let characterMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            let character = new THREE.Mesh(characterGeometry, characterMaterial);
+            const character = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 1, 1),
+                new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+            );
             scene.add(character);
-
-            // Posición inicial de la cámara
             camera.position.z = 5;
 
-            // Guardar posición del jugador en Firebase
-            function updatePosition(playerId, position) {
-                set(ref(db, 'players/' + playerId), {
-                    x: position.x,
-                    y: position.y,
-                    z: position.z
-                });
+            function updatePosition(position) {
+                set(ref(db, 'players/' + playerId), position);
             }
 
-            // Leer posiciones de otros jugadores en Firebase
-            const players = {}; // Guardamos los jugadores en un mapa
+            const players = {};
             onValue(ref(db, 'players'), (snapshot) => {
-                const playersData = snapshot.val();
-                for (let playerId in playersData) {
-                    const player = playersData[playerId];
-                    if (!players[playerId]) {
-                        // Crear un nuevo jugador si no existe
-                        let otherPlayer = new THREE.Mesh(
-                            new THREE.BoxGeometry(1, 1, 1),
-                            new THREE.MeshBasicMaterial({ color: 0x0000ff })
-                        );
-                        players[playerId] = otherPlayer;
-                        scene.add(otherPlayer);
+                const data = snapshot.val() || {};
+                for (let id in data) {
+                    if (id !== playerId) {
+                        if (!players[id]) {
+                            players[id] = new THREE.Mesh(
+                                new THREE.BoxGeometry(1, 1, 1),
+                                new THREE.MeshBasicMaterial({ color: 0x0000ff })
+                            );
+                            scene.add(players[id]);
+                        }
+                        players[id].position.set(data[id].x, data[id].y, data[id].z);
                     }
-                    // Actualizar la posición de los jugadores
-                    players[playerId].position.set(player.x, player.y, player.z);
                 }
             });
 
-            // Movimiento básico del personaje con las teclas
             let moveSpeed = 0.1;
             window.addEventListener("keydown", (event) => {
                 if (event.key === "ArrowUp") character.position.z -= moveSpeed;
                 if (event.key === "ArrowDown") character.position.z += moveSpeed;
                 if (event.key === "ArrowLeft") character.position.x -= moveSpeed;
                 if (event.key === "ArrowRight") character.position.x += moveSpeed;
-                // Actualizar la posición en Firebase
-                updatePosition(playerId, character.position);
+                updatePosition({ x: character.position.x, y: character.position.y, z: character.position.z });
             });
 
-            // Animación del juego
             function animate() {
                 requestAnimationFrame(animate);
                 renderer.render(scene, camera);
             }
             animate();
 
-            // Ajuste del tamaño de la ventana
             window.addEventListener("resize", () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
+
+            window.addEventListener("beforeunload", () => {
+                remove(ref(db, 'players/' + playerId));
+            });
         }
     </script>
-
-    <!-- Cargar Three.js -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
 </body>
 </html>
