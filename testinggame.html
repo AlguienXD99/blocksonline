@@ -1,130 +1,122 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Singleplayer Blockbase - Virtualblocks</title>
+    <title>Multiplayer 3D Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            height: 100vh;
-            background-color: #87CEEB;
-        }
-        canvas { display: block; }
-        button {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            padding: 10px;
-            background-color: #ff6347;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        body { margin: 0; overflow: hidden; }
+        #login-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
     </style>
 </head>
 <body>
-    <audio autoplay loop muted>
-        <source src="https://gitlab.com/AlguienXD99/createfuntv/-/raw/main/punch.mp3" type="audio/mp3">
-        Tu navegador no soporta el elemento de audio.
-    </audio>
-    <button onclick="window.close();">Salir del juego</button>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getDatabase, ref, set, update, onChildAdded, onChildChanged, onChildRemoved, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155/build/three.module.js';
-
-        const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            databaseURL: "TU_DATABASE_URL",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
-        };
+    <div id="login-container">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <button onclick="register()">Register</button>
+    </div>
+    <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+  authDomain: "virtualblocks-b7a52.firebaseapp.com",
+  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+  projectId: "virtualblocks-b7a52",
+  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  messagingSenderId: "490618182453",
+  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        let playerRef, players = {};
         
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        function createPlayer(id, color) {
-            const geometry = new THREE.BoxGeometry();
-            const material = new THREE.MeshBasicMaterial({ color });
-            const cube = new THREE.Mesh(geometry, material);
-            cube.userData.id = id;
-            scene.add(cube);
-            return cube;
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then(user => startGame(user.user))
+                .catch(error => alert(error.message));
         }
 
-        const players = {};
+        function register() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(user => {
+                    db.ref('players/' + user.user.uid).set({
+                        x: 0, y: 0, z: 0, color: "#" + Math.floor(Math.random()*16777215).toString(16)
+                    });
+                })
+                .catch(error => alert(error.message));
+        }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Jugador conectado", user.uid);
-                initGame(user.uid);
-            } else {
-                console.log("Usuario no autenticado");
+        function startGame(user) {
+            document.getElementById('login-container').style.display = 'none';
+            playerRef = db.ref('players/' + user.uid);
+            playerRef.onDisconnect().remove();
+            init3DGame(user);
+        }
+
+        function init3DGame(user) {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            
+            function createPlayer(uid, data) {
+                const geometry = new THREE.BoxGeometry();
+                const material = new THREE.MeshBasicMaterial({ color: data.color });
+                const playerCube = new THREE.Mesh(geometry, material);
+                scene.add(playerCube);
+                players[uid] = playerCube;
+                updatePlayer(uid, data);
             }
-        });
-
-        async function initGame(uid) {
-            const playerRef = ref(db, players/${uid});
-            const snapshot = await get(ref(db, 'players'));
-            if (snapshot.exists()) {
-                snapshot.forEach((child) => {
-                    const id = child.key;
-                    const data = child.val();
-                    if (!players[id]) {
-                        players[id] = createPlayer(id, id === uid ? 0x00ff00 : 0xff0000);
-                        players[id].position.set(data.x, data.y, data.z);
-                    }
+            
+            function updatePlayer(uid, data) {
+                if (players[uid]) {
+                    players[uid].position.set(data.x, data.y, data.z);
+                }
+            }
+            
+            db.ref('players').on('child_added', snapshot => {
+                createPlayer(snapshot.key, snapshot.val());
+            });
+            
+            db.ref('players').on('child_changed', snapshot => {
+                updatePlayer(snapshot.key, snapshot.val());
+            });
+            
+            db.ref('players').on('child_removed', snapshot => {
+                scene.remove(players[snapshot.key]);
+                delete players[snapshot.key];
+            });
+            
+            const playerCube = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ color: "blue" }));
+            scene.add(playerCube);
+            players[user.uid] = playerCube;
+            
+            camera.position.z = 5;
+            document.addEventListener('keydown', event => {
+                switch(event.key) {
+                    case 'ArrowUp': players[user.uid].position.z -= 0.1; break;
+                    case 'ArrowDown': players[user.uid].position.z += 0.1; break;
+                    case 'ArrowLeft': players[user.uid].position.x -= 0.1; break;
+                    case 'ArrowRight': players[user.uid].position.x += 0.1; break;
+                }
+                playerRef.set({
+                    x: players[user.uid].position.x,
+                    y: players[user.uid].position.y,
+                    z: players[user.uid].position.z,
+                    color: "blue"
                 });
-            }
-            update(playerRef, { x: 0, y: 0, z: 0 });
-
-            onChildAdded(ref(db, 'players'), (snapshot) => {
-                const id = snapshot.key;
-                if (!players[id]) {
-                    players[id] = createPlayer(id, 0xff0000);
-                }
             });
-
-            onChildChanged(ref(db, 'players'), (snapshot) => {
-                const id = snapshot.key;
-                const data = snapshot.val();
-                if (players[id]) {
-                    players[id].position.set(data.x, data.y, data.z);
-                }
-            });
-
-            onChildRemoved(ref(db, 'players'), (snapshot) => {
-                const id = snapshot.key;
-                if (players[id]) {
-                    scene.remove(players[id]);
-                    delete players[id];
-                }
-            });
-
-            document.addEventListener('keydown', (event) => {
-                let pos = players[uid].position;
-                if (event.key === 'w') pos.z -= 0.1;
-                if (event.key === 's') pos.z += 0.1;
-                if (event.key === 'a') pos.x -= 0.1;
-                if (event.key === 'd') pos.x += 0.1;
-                if (event.key === ' ') pos.y += 0.1;
-                update(playerRef, { x: pos.x, y: pos.y, z: pos.z });
-            });
-
+            
             function animate() {
                 requestAnimationFrame(animate);
                 renderer.render(scene, camera);
