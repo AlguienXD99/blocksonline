@@ -61,6 +61,9 @@
         function startGame(user) {
             document.getElementById('login-container').style.display = 'none';
             playerRef = db.ref('players/' + user.uid);
+            playerRef.set({
+                x: 0, y: 0, z: 0, color: "#" + Math.floor(Math.random()*16777215).toString(16)
+            });
             playerRef.onDisconnect().remove();
             init3DGame(user);
         }
@@ -73,17 +76,26 @@
             document.body.appendChild(renderer.domElement);
             
             function createPlayer(uid, data) {
-                const geometry = new THREE.BoxGeometry();
-                const material = new THREE.MeshBasicMaterial({ color: data.color });
-                const playerCube = new THREE.Mesh(geometry, material);
-                scene.add(playerCube);
-                players[uid] = playerCube;
+                if (!players[uid]) {
+                    const geometry = new THREE.BoxGeometry();
+                    const material = new THREE.MeshBasicMaterial({ color: data.color });
+                    const playerCube = new THREE.Mesh(geometry, material);
+                    scene.add(playerCube);
+                    players[uid] = playerCube;
+                }
                 updatePlayer(uid, data);
             }
             
             function updatePlayer(uid, data) {
                 if (players[uid]) {
                     players[uid].position.set(data.x, data.y, data.z);
+                }
+            }
+            
+            function removePlayer(uid) {
+                if (players[uid]) {
+                    scene.remove(players[uid]);
+                    delete players[uid];
                 }
             }
             
@@ -96,10 +108,10 @@
             });
             
             db.ref('players').on('child_removed', snapshot => {
-                scene.remove(players[snapshot.key]);
-                delete players[snapshot.key];
+                removePlayer(snapshot.key);
             });
-            
+
+            // Crear el jugador actual
             const playerCube = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ color: "blue" }));
             scene.add(playerCube);
             players[user.uid] = playerCube;
