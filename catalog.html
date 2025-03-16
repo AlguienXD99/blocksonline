@@ -90,19 +90,18 @@
 
         // 🔹 Función para cambiar el color del avatar
 async function changeAvatarColor(bodyPart, color) {
-    const avatar = document.getElementById('avatar');
-
-    if (bodyPart === "head") {
-        avatar.style.backgroundColor = color;
+    const part = document.getElementById(bodyPart);
+    if (part) {
+        part.style.backgroundColor = color;
     }
-    // Guardar el color en la base de datos correctamente
+    
+    // Guardar el color en Firebase
     const user = auth.currentUser;
     if (user) {
         const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
-        await update(userRef, { [bodyPart]: color }); // Se actualiza solo la parte específica
+        await update(userRef, { [bodyPart]: color });
     }
 }
-
         // 🔹 Función para comprar artículos
         async function buyItem(itemName, itemPrice) {
             const user = auth.currentUser;
@@ -217,7 +216,7 @@ async function changeAvatarColor(bodyPart, color) {
     </div>
 
     <div>
-        <h3>Change Head Colorr</h3>
+        <h3>Change Head Color</h3>
         <button class="button" onclick="changeAvatarColor('head', 'red')">Red</button>
         <button class="button" onclick="changeAvatarColor('head', 'blue')">Blue</button>
         <button class="button" onclick="changeAvatarColor('head', 'green')">Green</button>
