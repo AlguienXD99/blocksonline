@@ -106,21 +106,24 @@
             const userRef = ref(db, "users/" + uid);
 
             // Escuchar cambios en tiempo real
-            onValue(userRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    document.getElementById("nickname").value = data.nickname || "";
-                    document.getElementById("inventory").textContent = JSON.stringify(data.inventory || []);
-                    document.getElementById("equippedItems").textContent = JSON.stringify(data.equippedItems || []);
+    onValue(userRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            document.getElementById("nickname").value = data.nickname || "";
+            document.getElementById("inventory").textContent = JSON.stringify(data.inventory || []);
+            document.getElementById("equippedItems").textContent = JSON.stringify(data.equippedItems || []);
 
-                    // Cargar el color del avatar desde avatarConfig.color
-                    const avatarColor = data.avatarConfig ? data.avatarConfig.color : "gray";
-                    changeAvatarColor(avatarColor); // Establecer color inicial
-                } else {
-                    console.log("No data available for this user.");
-                }
-            });
+            // Cargar la configuración de color del avatar correctamente
+            if (data.avatarConfig) {
+                Object.entries(data.avatarConfig).forEach(([bodyPart, color]) => {
+                    changeAvatarColor(bodyPart, color);
+                });
+            }
+        } else {
+            console.log("No data available for this user.");
         }
+    });
+}
 
         // 🔹 Función para cambiar el color del avatar
 async function changeAvatarColor(bodyPart, color) {
