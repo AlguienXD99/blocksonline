@@ -36,6 +36,40 @@
             border-radius: 20px;
             display: block;
         }
+        #avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.body-part {
+    width: 100px;
+    height: 100px;
+    border: 2px solid black;
+    margin: 5px;
+}
+
+#head {
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+}
+
+#torso {
+    width: 100px;
+    height: 120px;
+}
+
+#leftArm, #rightArm {
+    width: 50px;
+    height: 100px;
+}
+
+#leftLeg, #rightLeg {
+    width: 50px;
+    height: 120px;
+}
+
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -246,12 +280,12 @@ async function changeAvatarColor(bodyPart, color) {
 
     <!-- Avatar representation -->
 <div id="avatar">
-    <div id="head"></div>
-    <div id="torso"></div>
-    <div id="leftArm"></div>
-    <div id="rightArm"></div>
-    <div id="leftLeg"></div>
-    <div id="rightLeg"></div>
+    <div id="head" class="body-part"></div>
+    <div id="torso" class="body-part"></div>
+    <div id="leftArm" class="body-part"></div>
+    <div id="rightArm" class="body-part"></div>
+    <div id="leftLeg" class="body-part"></div>
+    <div id="rightLeg" class="body-part"></div>
 </div>
 
 </body>
