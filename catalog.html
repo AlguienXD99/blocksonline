@@ -90,18 +90,28 @@
 
         // 🔹 Función para cambiar el color del avatar
 async function changeAvatarColor(bodyPart, color) {
+    if (!color) {
+        console.error(`Error: el color para ${bodyPart} es inválido.`);
+        return;
+    }
+
     const part = document.getElementById(bodyPart);
     if (part) {
         part.style.backgroundColor = color;
     }
-    
-    // Guardar el color en Firebase
+
+    // Guardar el color en Firebase solo si es válido
     const user = auth.currentUser;
     if (user) {
         const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
-        await update(userRef, { [bodyPart]: color });
+        try {
+            await update(userRef, { [bodyPart]: color });
+        } catch (error) {
+            console.error("Error al actualizar Firebase:", error);
+        }
     }
 }
+
         // 🔹 Función para comprar artículos
         async function buyItem(itemName, itemPrice) {
             const user = auth.currentUser;
