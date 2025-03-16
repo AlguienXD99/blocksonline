@@ -54,6 +54,7 @@
                     document.getElementById("nickname").value = data.nickname || "";
                     document.getElementById("inventory").textContent = JSON.stringify(data.inventory || []);
                     document.getElementById("avatarConfig").textContent = JSON.stringify(data.avatarConfig || {});
+                    document.getElementById("blocksgold").textContent = data.blocksgold || 0;.
                 } else {
                     console.log("No data available for this user.");
                 }
@@ -85,6 +86,8 @@
 <body>
     <h1>Welcome to your Dashboard</h1>
     <div id="profile">
+        <p>BLOCKSGOLD:</p>
+        <p id="blocksgold">Loading...</p>
         <label>Nickname:</label>
         <input type="text" id="nickname" placeholder="Enter your nickname">
         <button onclick="saveProfile()">Save</button>
