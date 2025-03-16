@@ -215,13 +215,33 @@
     </div>
 
     <div>
-        <h3>Change Avatar Color</h3>
-        <button class="button" onclick="changeAvatarColor('red')">Red</button>
-        <button class="button" onclick="changeAvatarColor('blue')">Blue</button>
-        <button class="button" onclick="changeAvatarColor('green')">Green</button>
+        <h3>Change Head Colorr</h3>
+        <button class="button" onclick="changeAvatarColor('head', 'red')">Red</button>
+        <button class="button" onclick="changeAvatarColor('head', 'blue')">Blue</button>
+        <button class="button" onclick="changeAvatarColor('head', 'green')">Green</button>
+    </div>
+    <div>
+        <h3>Change Torso Color</h3>
+        <button class="button" onclick="changeAvatarColor('torso', 'red')">Red</button>
+        <button class="button" onclick="changeAvatarColor('torso', 'blue')">Blue</button>
+        <button class="button" onclick="changeAvatarColor('torso', 'green')">Green</button>
+    </div>
+    <div>
+        <h3>Change Legs Color</h3>
+        <button class="button" onclick="changeAvatarColor('legs', 'red')">Red</button>
+        <button class="button" onclick="changeAvatarColor('legs', 'blue')">Blue</button>
+        <button class="button" onclick="changeAvatarColor('legs', 'green')">Green</button>
     </div>
 
     <!-- Avatar representation -->
-    <div id="avatar"></div>
+<div id="avatar">
+    <div id="head"></div>
+    <div id="torso"></div>
+    <div id="leftArm"></div>
+    <div id="rightArm"></div>
+    <div id="leftLeg"></div>
+    <div id="rightLeg"></div>
+</div>
+
 </body>
 </html>
