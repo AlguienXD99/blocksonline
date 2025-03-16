@@ -89,17 +89,19 @@
         }
 
         // 🔹 Función para cambiar el color del avatar
-        async function changeAvatarColor(color) {
-            const avatar = document.getElementById('avatar');
-            avatar.style.backgroundColor = color; // Cambiar color del fondo del avatar
+async function changeAvatarColor(bodyPart, color) {
+    const avatar = document.getElementById('avatar');
 
-            // Guardar el color del avatar en la base de datos
-            const user = auth.currentUser;
-            if (user) {
-                const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
-                await update(userRef, { color: color });
-            }
-        }
+    if (bodyPart === "head") {
+        avatar.style.backgroundColor = color;
+    }
+    // Guardar el color en la base de datos correctamente
+    const user = auth.currentUser;
+    if (user) {
+        const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
+        await update(userRef, { [bodyPart]: color }); // Se actualiza solo la parte específica
+    }
+}
 
         // 🔹 Función para comprar artículos
         async function buyItem(itemName, itemPrice) {
