@@ -5,48 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Babylon.js Scene</title>
     <!-- Firebase SDK -->
-        <script type="module">
-        // Importar Firebase como módulo
-        import { ref } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-            authDomain: "virtualblocks-b7a52.firebaseapp.com",
-            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-            projectId: "virtualblocks-b7a52",
-            storageBucket: "virtualblocks-b7a52.appspot.com",
-            messagingSenderId: "490618182453",
-            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+        authDomain: "virtualblocks-b7a52.firebaseapp.com",
+        databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+        projectId: "virtualblocks-b7a52",
+        storageBucket: "virtualblocks-b7a52.appspot.com",
+        messagingSenderId: "490618182453",
+        appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+    };
 
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
 
-        console.log("Firebase inicializado correctamente");
-            
-        const colors = {
-            red: new BABYLON.Color3(1, 0, 1),
-            blue: new BABYLON.Color3(0, 0, 1),
-            green: new BABYLON.Color3(0, 1, 0)
-        };
+    console.log("Firebase inicializado correctamente");
+
+    const colors = {
+        red: new BABYLON.Color3(1, 0, 0),
+        blue: new BABYLON.Color3(0, 0, 1),
+        green: new BABYLON.Color3(0, 1, 0)
+    };
+
     let avatarConfig = { leftLeg: "blue" }; // Color por defecto
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        const userRef = ref(database, `users/${user.uid}/avatarConfig/leftLeg`);
-        console.log("Referencia de usuario obtenida:", userRef);
-    } else {
-        console.log("No hay usuario autenticado");
-    }
-});
-    const userRef = ref(database, "users/" + user.uid + "/avatarConfig" + "leftLeg/");
-        
-    </script>
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const userRef = ref(database, `users/${user.uid}/avatarConfig/leftLeg`);
+            console.log("Referencia de usuario obtenida:", userRef);
+        } else {
+            console.log("No hay usuario autenticado");
+        }
+    });
+
+</script>
+
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
     <style>
@@ -90,7 +88,6 @@ auth.onAuthStateChanged((user) => {
             const player = new BABYLON.TransformNode("player", scene);
             
             const colors = [new BABYLON.Color3(1, 1, 0), new BABYLON.Color3(0, 0, 1), new BABYLON.Color3(0, 1, 0), new BABYLON.Color3(1, 0, 0)];
-
 const parts = [
     { pos: new BABYLON.Vector3(0, 2, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
     { pos: new BABYLON.Vector3(0, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
@@ -99,7 +96,6 @@ const parts = [
     { pos: new BABYLON.Vector3(-0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
     { pos: new BABYLON.Vector3(0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue }
 ];
-
             parts.forEach((part, index) => {
                 const box = BABYLON.MeshBuilder.CreateBox(`box${index}`, {size: 0.9}, scene);
                 box.position.copyFrom(part.pos);
