@@ -31,6 +31,13 @@
         const auth = getAuth(app);
 
         console.log("Firebase inicializado correctamente");
+            
+        const colors {
+            red: [1, 0, 0],
+            blue:[0, 0, 1],
+            green:[0, 1, 0]
+        };
+        
     </script>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
@@ -51,12 +58,6 @@
 <body>
     <canvas id="renderCanvas"></canvas>
     <script>
-        const colors {
-            red: [1, 0, 0],
-            blue:[0, 0, 1],
-            green:[0, 1, 0]
-        };
-        
         const canvas = document.getElementById("renderCanvas");
 
         const engine = new BABYLON.Engine(canvas, true);
