@@ -149,30 +149,44 @@ async function changeAvatarColor(bodyPart, color) {
     }
 }
 
-        // 🔹 Función para comprar artículos
-        async function buyItem(itemName, itemPrice) {
-            const user = auth.currentUser;
-            if (user) {
-                const userRef = ref(db, "users/" + user.uid);
-                const userData = (await get(userRef)).val();
-                
-                if (userData.inventory) {
-                    let inventory = userData.inventory;
-                    // Verificar si el usuario ya tiene el artículo
-                    if (inventory.includes(itemName)) {
-                        alert("You already own this item!");
-                    } else {
-                        inventory.push(itemName); // Agregar artículo al inventario
-                        await update(userRef, { inventory: inventory }); // Actualizar en la base de datos
-                        alert(itemName + " has been added to your inventory!");
-                    }
-                } else {
-                    const inventory = [itemName]; // Si no tiene inventario, crearlo
-                    await update(userRef, { inventory: inventory });
-                    alert(itemName + " has been added to your inventory!");
-                }
-            }
+// 🔹 Función para comprar artículos con Blocksgolds
+async function buyItem(itemName, itemPrice) {
+    const user = auth.currentUser;
+    if (user) {
+        const userRef = ref(db, "users/" + user.uid);
+        const userData = (await get(userRef)).val();
+
+        if (!userData) {
+            alert("Error: No user data found!");
+            return;
         }
+
+        let inventory = userData.inventory || [];
+        let blocksgolds = userData.blocksgolds || 0;
+
+        // Verificar si el usuario ya tiene el artículo
+        if (inventory.includes(itemName)) {
+            alert("You already own this item!");
+            return;
+        }
+
+        // Verificar si tiene suficientes Blocksgolds
+        if (blocksgolds < itemPrice) {
+            alert("Not enough Blocksgolds!");
+            return;
+        }
+
+        // Descontar Blocksgolds y añadir el artículo al inventario
+        blocksgolds -= itemPrice;
+        inventory.push(itemName);
+
+        // Actualizar en la base de datos
+        await update(userRef, { inventory: inventory, blocksgolds: blocksgolds });
+
+        alert(`${itemName} has been added to your inventory!`);
+    }
+}
+
 
 // 🔹 Función para equipar un artículo
 async function equipItem(itemName) {
