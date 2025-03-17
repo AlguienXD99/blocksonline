@@ -177,7 +177,7 @@ async function buyItem(itemName, itemPrice) {
         }
 
         // Descontar Blocksgolds y añadir el artículo al inventario
-        blocksgolds -= itemPrice;
+        blocksgold -= itemPrice;
         inventory.push(itemName);
 
         // Actualizar en la base de datos
