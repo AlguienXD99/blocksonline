@@ -1,0 +1,30 @@
+name: Deploy Firebase Config
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Crear archivo de configuración
+        run: |
+          echo "const firebaseConfig = {" > public/config.js
+          echo "  apiKey: '${{ secrets.FIREBASE_API_KEY }}'," >> public/config.js
+          echo "  authDomain: 'virtualblocks-b7a52.firebaseapp.com'," >> public/config.js
+          echo "  databaseURL: 'https://virtualblocks-b7a52-default-rtdb.firebaseio.com'," >> public/config.js
+          echo "  projectId: 'virtualblocks-b7a52'," >> public/config.js
+          echo "  storageBucket: 'virtualblocks-b7a52.firebasestorage.app'," >> public/config.js
+          echo "  messagingSenderId: '490618182453'," >> public/config.js
+          echo "  appId: '1:490618182453:web:93385819c7ff08537d8a7c'" >> public/config.js
+          echo "};" >> public/config.js
+          echo "export default firebaseConfig;" >> public/config.js
+
+      - name: Deploy to GitHub Pages
+        uses: actions/upload-pages-artifact@v2
