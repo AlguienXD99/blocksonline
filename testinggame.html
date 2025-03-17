@@ -30,9 +30,9 @@
         console.log("Firebase inicializado correctamente");
             
         const colors = {
-            red: [1, 0, 0],
-            blue:[0, 0, 1],
-            green:[0, 1, 0]
+            red: new BABYLON.Color3(1, 0, 1),
+            blue: new BABYLON.Color3(0, 0, 1),
+            green: new BABYLON.Color3(0, 1, 0)
         };
 auth.onAuthStateChanged((user) => {
     if (user) {
@@ -89,12 +89,12 @@ auth.onAuthStateChanged((user) => {
             const colors = [new BABYLON.Color3(1, 1, 0), new BABYLON.Color3(0, 0, 1), new BABYLON.Color3(0, 1, 0), new BABYLON.Color3(1, 0, 0)];
 
             const parts = [
-                {pos: new BABYLON.Vector3(0, 2, 0), color: colors[0]},
-                {pos: new BABYLON.Vector3(0, 1, 0), color: colors[1]},
-                {pos: new BABYLON.Vector3(0.2, 0, 0), color: colors[2]},
-                {pos: new BABYLON.Vector3(-0.9, 1, 0), color: colors[0]},
-                {pos: new BABYLON.Vector3(-0.2, 0, 0), color: colors[2]},
-                {pos: new BABYLON.Vector3(0.9, 1, 0), color: colors[0]}
+                {pos: new BABYLON.Vector3(0, 2, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
+                {pos: new BABYLON.Vector3(0, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
+                {pos: new BABYLON.Vector3(0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
+                {pos: new BABYLON.Vector3(-0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
+                {pos: new BABYLON.Vector3(-0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
+                {pos: new BABYLON.Vector3(0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
             ];
 
             parts.forEach((part, index) => {
