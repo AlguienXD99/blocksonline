@@ -7,6 +7,7 @@
     <!-- Firebase SDK -->
         <script type="module">
         // Importar Firebase como módulo
+        import { ref } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
         import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -37,12 +38,13 @@
     let avatarConfig = { leftLeg: "blue" }; // Color por defecto
 auth.onAuthStateChanged((user) => {
     if (user) {
-        const userRef = ref(database, `users/${user.uid}/avatarConfig/leftLeg/`);
+        const userRef = ref(database, `users/${user.uid}/avatarConfig/leftLeg`);
+        console.log("Referencia de usuario obtenida:", userRef);
     } else {
         console.log("No hay usuario autenticado");
     }
 });
-    const userRef = ref(db, "users/" + user.uid + "/avatarConfig" + "leftLeg/");
+    const userRef = ref(database, "users/" + user.uid + "/avatarConfig" + "leftLeg/");
         
     </script>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
@@ -89,14 +91,14 @@ auth.onAuthStateChanged((user) => {
             
             const colors = [new BABYLON.Color3(1, 1, 0), new BABYLON.Color3(0, 0, 1), new BABYLON.Color3(0, 1, 0), new BABYLON.Color3(1, 0, 0)];
 
-            const parts = [
-                {pos: new BABYLON.Vector3(0, 2, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
-                {pos: new BABYLON.Vector3(0, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
-                {pos: new BABYLON.Vector3(0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
-                {pos: new BABYLON.Vector3(-0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
-                {pos: new BABYLON.Vector3(-0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
-                {pos: new BABYLON.Vector3(0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue},
-            ];
+const parts = [
+    { pos: new BABYLON.Vector3(0, 2, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
+    { pos: new BABYLON.Vector3(0, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
+    { pos: new BABYLON.Vector3(0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
+    { pos: new BABYLON.Vector3(-0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
+    { pos: new BABYLON.Vector3(-0.2, 0, 0), color: colors[avatarConfig.leftLeg] || colors.blue },
+    { pos: new BABYLON.Vector3(0.9, 1, 0), color: colors[avatarConfig.leftLeg] || colors.blue }
+];
 
             parts.forEach((part, index) => {
                 const box = BABYLON.MeshBuilder.CreateBox(`box${index}`, {size: 0.9}, scene);
