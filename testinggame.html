@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Babylon.js Scene</title>
     <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
         <script type="module">
         // Importar Firebase como módulo
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -32,12 +29,19 @@
 
         console.log("Firebase inicializado correctamente");
             
-        const colors {
+        const colors = {
             red: [1, 0, 0],
             blue:[0, 0, 1],
             green:[0, 1, 0]
         };
-    const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        const userRef = ref(database, `users/${user.uid}/avatarConfig/leftLeg/`);
+    } else {
+        console.log("No hay usuario autenticado");
+    }
+});
+    const userRef = ref(db, "users/" + user.uid + "/avatarConfig" + "leftLeg/");
         
     </script>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
