@@ -1,143 +1,333 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiplayer 3D Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <title>Babylon.js Scene</title>
+    <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
-        #login-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-        input { display: block; margin: 10px auto; padding: 10px; width: 200px; }
-        button { padding: 10px; cursor: pointer; }
-    </style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+    }
+    canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+</style>
 </head>
 <body>
-    <div id="login-container">
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Login</button>
-        <button onclick="register()">Register</button>
-    </div>
+    <canvas id="renderCanvas"></canvas>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-            authDomain: "virtualblocks-b7a52.firebaseapp.com",
-            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-            projectId: "virtualblocks-b7a52",
-            storageBucket: "virtualblocks-b7a52.appspot.com",
-            messagingSenderId: "490618182453",
-            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+  authDomain: "virtualblocks-b7a52.firebaseapp.com",
+  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+  projectId: "virtualblocks-b7a52",
+  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  messagingSenderId: "490618182453",
+  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+firebase.initializeApp(firebaseConfig);
+  // Obtener referencia a la base de datos
+  const database = firebase.database();
         
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.database();
-        let playerRef, players = {};
+        const canvas = document.getElementById("renderCanvas");
 
-        function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            auth.signInWithEmailAndPassword(email, password)
-                .then(user => startGame(user.user))
-                .catch(error => alert(error.message));
-        }
+        const engine = new BABYLON.Engine(canvas, true);
 
-        function register() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(user => {
-                    db.ref('players/' + user.user.uid).set({
-                        x: 0, y: 0, z: 0, color: "#" + Math.floor(Math.random()*16777215).toString(16)
-                    });
-                })
-                .catch(error => alert(error.message));
-        }
+        const createScene = function () {
+            const scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3(0.5, 0.8, 1);
 
-        function startGame(user) {
-            document.getElementById('login-container').style.display = 'none';
-            playerRef = db.ref('players/' + user.uid);
-            playerRef.set({
-                x: 0, y: 0, z: 0, color: "#" + Math.floor(Math.random()*16777215).toString(16)
-            });
-            playerRef.onDisconnect().remove();
-            init3DGame(user);
-        }
+            const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 5, -10), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            camera.attachControl(canvas, true);
 
-        function init3DGame(user) {
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 20, height: 20}, scene);
+            ground.checkCollisions = true;
+
+            const groundMaterial = new BABYLON.StandardMaterial("groundMaterial", scene);
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.6, 0.3);
+            ground.material = groundMaterial;
+
+            const player = new BABYLON.TransformNode("player", scene);
             
-            function createPlayer(uid, data) {
-                if (!players[uid]) {
-                    const geometry = new THREE.BoxGeometry();
-                    const material = new THREE.MeshBasicMaterial({ color: data.color });
-                    const playerCube = new THREE.Mesh(geometry, material);
-                    scene.add(playerCube);
-                    players[uid] = playerCube;
+            const colors = [new BABYLON.Color3(1, 1, 0), new BABYLON.Color3(0, 0, 1), new BABYLON.Color3(0, 1, 0), new BABYLON.Color3(1, 0, 0)];
+
+            const parts = [
+                {pos: new BABYLON.Vector3(0, 2, 0), color: colors[0]},
+                {pos: new BABYLON.Vector3(0, 1, 0), color: colors[1]},
+                {pos: new BABYLON.Vector3(0.2, 0, 0), color: colors[2]},
+                {pos: new BABYLON.Vector3(-0.9, 1, 0), color: colors[0]},
+                {pos: new BABYLON.Vector3(-0.2, 0, 0), color: colors[2]},
+                {pos: new BABYLON.Vector3(0.9, 1, 0), color: colors[0]}
+            ];
+
+            parts.forEach((part, index) => {
+                const box = BABYLON.MeshBuilder.CreateBox(`box${index}`, {size: 0.9}, scene);
+                box.position.copyFrom(part.pos);
+                const mat = new BABYLON.StandardMaterial(`mat${index}`, scene);
+                mat.diffuseColor = part.color;
+                box.material = mat;
+                box.parent = player;
+            });
+
+            player.position = new BABYLON.Vector3(0, 2, 0);
+            let velocityY = 0;
+            let isJumping = false;
+
+            const skybox = BABYLON.MeshBuilder.CreateBox("skyBox", {size: 1000.0}, scene);
+            const skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.disableLighting = true;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.7, 1);
+            skybox.material = skyboxMaterial;
+
+            const gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+            const button = BABYLON.GUI.Button.CreateImageOnlyButton("toolButton", "https://tr.rbxcdn.com/180DAY-a9d39b3d52d21e3a43246176f9329760/420/420/Image/Png/noFilter");
+            button.width = "100px";
+            button.height = "100px";
+            button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+            gui.addControl(button);
+
+            let sword = null;
+            let swordEquipped = false;
+
+            button.onPointerClickObservable.add(() => {
+                if (swordEquipped) {
+                    sword.dispose();
+                    sword = null;
+                } else {
+                    sword = BABYLON.MeshBuilder.CreateBox("sword", {height: 2, width: 0.2, depth: 0.2}, scene);
+                    sword.position = new BABYLON.Vector3(0.5, 2, 0);
+                    sword.parent = player;
                 }
-                updatePlayer(uid, data);
-            }
-            
-            function updatePlayer(uid, data) {
-                if (players[uid]) {
-                    players[uid].position.set(data.x, data.y, data.z);
-                }
-            }
-            
-            function removePlayer(uid) {
-                if (players[uid]) {
-                    scene.remove(players[uid]);
-                    delete players[uid];
-                }
-            }
-            
-            db.ref('players').on('child_added', snapshot => {
-                createPlayer(snapshot.key, snapshot.val());
+                swordEquipped = !swordEquipped;
             });
-            
-            db.ref('players').on('child_changed', snapshot => {
-                updatePlayer(snapshot.key, snapshot.val());
-            });
-            
-            db.ref('players').on('child_removed', snapshot => {
-                removePlayer(snapshot.key);
+// Crear un contenedor para el joystick
+const joystickContainer = new BABYLON.GUI.Rectangle();
+joystickContainer.width = "150px";
+joystickContainer.height = "150px";
+joystickContainer.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+joystickContainer.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+joystickContainer.left = "10%";
+joystickContainer.top = "-15%";
+joystickContainer.cornerRadius = 75;
+joystickContainer.color = "white";
+joystickContainer.thickness = 2;
+joystickContainer.background = "rgba(255, 255, 255, 0.2)";
+gui.addControl(joystickContainer);
+
+// Crear el joystick
+const joystick = new BABYLON.GUI.Ellipse();
+joystick.width = "70px";
+joystick.height = "70px";
+joystick.color = "white";
+joystick.thickness = 2;
+joystick.background = "gray";
+joystickContainer.addControl(joystick);
+
+// Variables de movimiento
+let joystickOffset = new BABYLON.Vector2(0, 0);
+let isJoystickActive = false;
+
+// Guardar la posición inicial del joystick
+const initialJoystickPosition = { x: 0, y: 0 };
+
+// Manejar eventos de PC y móviles
+const startJoystick = (coordinates) => {
+    isJoystickActive = true;
+};
+
+const moveJoystick = (coordinates) => {
+    if (isJoystickActive) {
+        let offsetX = coordinates.x - joystickContainer._currentMeasure.left - 75;
+        let offsetY = coordinates.y - joystickContainer._currentMeasure.top - 75;
+
+        joystick.left = Math.min(Math.max(offsetX, -40), 40);
+        joystick.top = Math.min(Math.max(offsetY, -40), 40);
+
+        joystickOffset.x = joystick.left / 40;
+        joystickOffset.y = joystick.top / 40;
+    }
+};
+const resetJoystick = () => {
+    isJoystickActive = false;
+    joystick.left = initialJoystickPosition.x;
+    joystick.top = initialJoystickPosition.y;
+    joystickOffset.x = 0;
+    joystickOffset.y = 0;
+};
+
+// Aplicar eventos para PC y móviles
+joystick.onPointerDownObservable.add(startJoystick);
+joystick.onPointerMoveObservable.add(moveJoystick);
+joystick.onPointerUpObservable.add(resetJoystick);
+
+joystickContainer.onPointerDownObservable.add(startJoystick);
+joystickContainer.onPointerMoveObservable.add(moveJoystick);
+joystickContainer.onPointerUpObservable.add(resetJoystick);
+
+// Botón de salto
+const jumpButton = BABYLON.GUI.Button.CreateSimpleButton("jumpButton", "Salto");
+jumpButton.width = "80px";
+jumpButton.height = "80px";
+jumpButton.cornerRadius = 40;
+jumpButton.color = "white";
+jumpButton.background = "blue";
+jumpButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+jumpButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+jumpButton.left = "-10%";
+jumpButton.top = "-20%";
+gui.addControl(jumpButton);
+
+jumpButton.onPointerDownObservable.add(() => {
+    if (!isJumping) {
+        isJumping = true;
+        velocityY = 0.3;
+    }
+});
+
+            const speed = 0.2;
+            const rotationSpeed = 0.15;
+            const keys = { w: false, a: false, s: false, d: false };
+
+            window.addEventListener("keydown", (event) => {
+                if (event.key in keys) keys[event.key] = true;
+                if (event.key === " ") {
+                    if (!isJumping) {
+                        isJumping = true;
+                        velocityY = 0.3;
+                    }
+                }
             });
 
-            // Crear el jugador actual
-            const playerCube = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial({ color: "blue" }));
-            scene.add(playerCube);
-            players[user.uid] = playerCube;
-            
-            camera.position.z = 5;
-            document.addEventListener('keydown', event => {
-                switch(event.key) {
-                    case 'ArrowUp': players[user.uid].position.z -= 0.1; break;
-                    case 'ArrowDown': players[user.uid].position.z += 0.1; break;
-                    case 'ArrowLeft': players[user.uid].position.x -= 0.1; break;
-                    case 'ArrowRight': players[user.uid].position.x += 0.1; break;
-                }
-                playerRef.set({
-                    x: players[user.uid].position.x,
-                    y: players[user.uid].position.y,
-                    z: players[user.uid].position.z,
-                    color: "blue"
-                });
+            window.addEventListener("keyup", (event) => {
+                if (event.key in keys) keys[event.key] = false;
             });
-            
-            function animate() {
-                requestAnimationFrame(animate);
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
+
+            scene.onBeforeRenderObservable.add(() => {
+                let moveDirection = new BABYLON.Vector3.Zero();
+                if (keys.w) moveDirection.z += 1;
+                if (keys.s) moveDirection.z -= 1;
+                if (keys.a) moveDirection.x -= 1;
+                if (keys.d) moveDirection.x += 1;
+
+                if (!moveDirection.equals(BABYLON.Vector3.Zero())) {
+                    moveDirection.normalize().scaleInPlace(speed);
+                    player.position.addInPlace(moveDirection);
+
+                    const targetRotation = Math.atan2(moveDirection.x, moveDirection.z);
+                    player.rotation.y = BABYLON.Scalar.Lerp(player.rotation.y, targetRotation, rotationSpeed);
+                }
+
+                velocityY -= 0.02;
+                player.position.y += velocityY;
+
+                if (player.position.y <= 2) {
+                    player.position.y = 2;
+                    velocityY = 0;
+                    isJumping = false;
+                }
+
+                camera.position.set(player.position.x, 5, player.position.z - 10);
+            });
+scene.collisionsEnabled = false; // Habilitar colisiones en la escena
+
+// Crear un bloque con colisión
+const block = BABYLON.MeshBuilder.CreateBox("block", { width: 5, height: 7, depth: 1 }, scene);
+block.position = new BABYLON.Vector3(0, 4, 5); // Ubicación
+block.checkCollisions = true; // Habilitar colisión
+
+// Material del bloque
+const blockMaterial = new BABYLON.StandardMaterial("blockMaterial", scene);
+const blockTexture = new BABYLON.Texture("blocksonlinelogo.png", scene);
+blockMaterial.diffuseColor = new BABYLON.Color3(1, 9, 9); // Rojo
+block.material = blockMaterial;
+blockTexture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
+blockTexture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
+blockMaterial.diffuseTexture = blockTexture;
+block.material = blockMaterial;
+
+// Habilitar colisión en el jugador
+player.checkCollisions = true;
+player.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5); // Define el tamaño de colisión del jugador
+player.ellipsoidOffset = new BABYLON.Vector3(0, 1, 0); // Ajuste de la colisión
+
+// Habilitar gravedad y colisiones en la cámara (si usas una FreeCamera)
+camera.checkCollisions = true;
+camera.applyGravity = true;
+camera.ellipsoid = new BABYLON.Vector3(1, 1, 1); // Tamaño de colisión de la cámara
+
+            return scene;
+        };
+
+        const scene = createScene();
+        engine.runRenderLoop(() => {
+            scene.render();
+        });
+
+        window.addEventListener("resize", () => {
+            engine.resize();
+        });
+        // Controles táctiles para mover al jugador
+const moveButtons = [
+    { id: "moveLeft", text: "←", direction: new BABYLON.Vector3(-1, 0, 0) },
+    { id: "moveRight", text: "→", direction: new BABYLON.Vector3(1, 0, 0) },
+    { id: "moveUp", text: "↑", direction: new BABYLON.Vector3(0, 0, 1) },
+    { id: "moveDown", text: "↓", direction: new BABYLON.Vector3(0, 0, -1) }
+];
+
+moveButtons.forEach(btn => {
+    let button = BABYLON.GUI.Button.CreateSimpleButton(btn.id, btn.text);
+    button.width = "60px";
+    button.height = "60px";
+    button.color = "white";
+    button.background = "black";
+    button.cornerRadius = 30;
+    button.alpha = 0.7;
+
+    if (btn.id === "moveLeft") {
+        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        button.left = "10%";
+        button.top = "-10%";
+    } else if (btn.id === "moveRight") {
+        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        button.left = "20%";
+        button.top = "-10%";
+    } else if (btn.id === "moveUp") {
+        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        button.left = "15%";
+        button.top = "-20%";
+    } else if (btn.id === "moveDown") {
+        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        button.left = "15%";
+        button.top = "-5%";
+    }
+
+    gui.addControl(button);
+
+    button.onPointerDownObservable.add(() => {
+        player.position.addInPlace(btn.direction.scale(0.2)); // Movimiento en la dirección correspondiente
+    });
+});
+
     </script>
 </body>
 </html>
