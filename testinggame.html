@@ -32,16 +32,26 @@
         green: new BABYLON.Color3(0, 1, 0)
     };
 
-    var avatarConfig = { leftLeg: "blue" }; // Color por defecto
+import { get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            const userRef = ref(database, `users/${user.uid}/avatarConfig/leftLeg`);
-            console.log("Referencia de usuario obtenida:", userRef);
-        } else {
-            console.log("No hay usuario autenticado");
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userRef = ref(database, `users/${user.uid}/avatarConfig`);
+        try {
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                avatarConfig = snapshot.val(); // Aquí obtenemos toda la configuración
+                console.log("Avatar config cargado:", avatarConfig);
+            } else {
+                console.log("No hay configuración de avatar en la base de datos.");
+            }
+        } catch (error) {
+            console.error("Error al obtener avatarConfig:", error);
         }
-    });
+    } else {
+        console.log("No hay usuario autenticado");
+    }
+});
 
 </script>
 
