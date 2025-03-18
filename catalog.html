@@ -5,71 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catalog - BLOCKSONLINE</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .item {
-            display: inline-block;
-            margin: 20px;
-            text-align: center;
-        }
-        .item img {
-            width: 100px;
-            height: 100px;
-        }
-        #profile {
-            margin-top: 20px;
-        }
-        .button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+        body { font-family: Arial, sans-serif; }
+        .item { display: inline-block; margin: 20px; text-align: center; }
+        .item img { width: 100px; height: 100px; }
+        #profile { margin-top: 20px; }
+        .button { margin-top: 10px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
         #avatar {
-            width: 100px;
-            height: 200px;
-            background-color: #ccc; /* Color inicial del avatar */
-            margin-top: 20px;
-            border-radius: 20px;
-            display: block;
+            width: 100px; height: 200px; background-color: #ccc;
+            margin-top: 20px; border-radius: 20px; display: flex; flex-direction: column; align-items: center;
         }
-        #avatar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.body-part {
-    width: 100px;
-    height: 100px;
-    border: 2px solid black;
-    margin: 5px;
-}
-
-#head {
-    border-radius: 50%;
-    width: 80px;
-    height: 80px;
-}
-
-#torso {
-    width: 100px;
-    height: 120px;
-}
-
-#leftArm, #rightArm {
-    width: 50px;
-    height: 100px;
-}
-
-#leftLeg, #rightLeg {
-    width: 50px;
-    height: 120px;
-}
-
+        .body-part {
+            width: 100px; height: 100px; border: 2px solid black; margin: 5px;
+        }
+        #head { border-radius: 50%; width: 80px; height: 80px; }
+        #torso { width: 100px; height: 120px; }
+        #leftArm, #rightArm, #leftLeg, #rightLeg { width: 50px; height: 100px; }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -124,7 +74,6 @@
         }
     });
 }
-
         // 🔹 Función para cambiar el color del avatar
 async function changeAvatarColor(bodyPart, color) {
     if (!color) {
@@ -187,7 +136,6 @@ async function buyItem(itemName, itemPrice) {
     }
 }
 
-
 // 🔹 Función para equipar un artículo
 async function equipItem(itemName) {
     const user = auth.currentUser;
@@ -232,13 +180,11 @@ async function equipItem(itemName) {
                 }
             }
         }
-
         // 🔹 Cerrar sesión
         async function logout() {
             await signOut(auth);
             window.location.href = "login.html";
         }
-
         // 🔹 Asignar eventos a los botones
         window.buyItem = buyItem;
         window.equipItem = equipItem;
@@ -255,17 +201,14 @@ async function equipItem(itemName) {
         <input type="text" id="nickname" placeholder="Enter your nickname" readonly>
         <button onclick="logout()">Logout</button>
     </div>
-
     <div>
         <h3>Your Inventory</h3>
         <p id="inventory">Loading...</p>
     </div>
-
     <div>
         <h3>Equipped Items</h3>
         <p id="equippedItems">Loading...</p>
     </div>
-
     <div>
         <h3>Available Items</h3>
         <div class="item">
@@ -283,7 +226,6 @@ async function equipItem(itemName) {
             <button class="button" onclick="unequipItem('TShirtItem')">Unequip</button>
         </div>
     </div>
-
     <div>
         <h3>Change Head Color</h3>
         <button class="button" onclick="changeAvatarColor('head', 'red')">Red</button>
@@ -326,7 +268,6 @@ async function equipItem(itemName) {
         <button class="button" onclick="changeAvatarColor('rightArm', 'green')">Green</button>
         <button class="button" onclick="changeAvatarColor('rightArm', 'yellow')">Yellow</button>
     </div>
-
     <!-- Avatar representation -->
 <div id="avatar">
     <div id="head" class="body-part"></div>
@@ -336,6 +277,5 @@ async function equipItem(itemName) {
     <div id="leftLeg" class="body-part"></div>
     <div id="rightLeg" class="body-part"></div>
 </div>
-
 </body>
 </html>
