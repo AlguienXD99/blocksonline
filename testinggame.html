@@ -266,52 +266,6 @@ camera.ellipsoid = new BABYLON.Vector3(1, 1, 1); // Tamaño de colisión de la c
         window.addEventListener("resize", () => {
             engine.resize();
         });
-        // Controles táctiles para mover al jugador
-const moveButtons = [
-    { id: "moveLeft", text: "←", direction: new BABYLON.Vector3(-1, 0, 0) },
-    { id: "moveRight", text: "→", direction: new BABYLON.Vector3(1, 0, 0) },
-    { id: "moveUp", text: "↑", direction: new BABYLON.Vector3(0, 0, 1) },
-    { id: "moveDown", text: "↓", direction: new BABYLON.Vector3(0, 0, -1) }
-];
-
-moveButtons.forEach(btn => {
-    let button = BABYLON.GUI.Button.CreateSimpleButton(btn.id, btn.text);
-    button.width = "60px";
-    button.height = "60px";
-    button.color = "white";
-    button.background = "black";
-    button.cornerRadius = 30;
-    button.alpha = 0.7;
-
-    if (btn.id === "moveLeft") {
-        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        button.left = "10%";
-        button.top = "-10%";
-    } else if (btn.id === "moveRight") {
-        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        button.left = "20%";
-        button.top = "-10%";
-    } else if (btn.id === "moveUp") {
-        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        button.left = "15%";
-        button.top = "-20%";
-    } else if (btn.id === "moveDown") {
-        button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        button.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-        button.left = "15%";
-        button.top = "-5%";
-    }
-
-    gui.addControl(button);
-
-    button.onPointerDownObservable.add(() => {
-        player.position.addInPlace(btn.direction.scale(0.2)); // Movimiento en la dirección correspondiente
-    });
-});
-
     </script>
 </body>
 </html>
