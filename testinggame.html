@@ -59,14 +59,16 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 const canvas = document.getElementById("gameCanvas");
-    // Cargar la imagen de fondo
+    
+// Cargar la imagen de fondo
 const backgroundImg = new Image();
-backgroundImg.src = "fondo.png"; // Asegúrate de tener esta imagen en la misma carpeta o proporciona la URL correcta.
+backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta correcta
+backgroundImg.onload = () => {
+    gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
+};
 
 function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Dibujar el fondo antes de cualquier otro objeto
+    // Dibujar la imagen de fondo
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
     // Suavizar el movimiento
