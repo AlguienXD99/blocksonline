@@ -1,82 +1,196 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Blocksonline 2D</title>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing</title>
     <style>
-        body { text-align: center; background: #ccc; }
-        canvas { background: white; }
+        body { margin: 0; background: white; overflow: hidden; }
+        canvas { display: block; }
+        #leaderboard { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            background: rgba(0, 0, 0, 0.7); 
+            color: white; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
-    <h1>Blocksonline 2D</h1>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-            authDomain: "virtualblocks-b7a52.firebaseapp.com",
-            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-            projectId: "virtualblocks-b7a52",
-            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-            messagingSenderId: "490618182453",
-            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-        };
+<canvas id="gameCanvas"></canvas>
+<div id="leaderboard">Leaderboard</div>
 
-        firebase.initializeApp(firebaseConfig);
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
 
-        const db = firebase.database();
-        let uid = "";
-        
-        function login() {
-            const email = prompt("Correo:");
-            const password = prompt("Contraseña:");
-            firebase.auth().signInWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    uid = userCredential.user.uid;
-                    startGame();
-                })
-                .catch(error => console.error("Error:", error.message));
-        }
-        
-        let players = {};
-        let canvas = document.getElementById("gameCanvas");
-        let ctx = canvas.getContext("2d");
-        let playerImg = new Image();
-        playerImg.src = "player.png"; // Reemplazar con la imagen del jugador
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAZM_UTKUtkjoXSmhAU2yFaWTgt9oUwktA",
+    authDomain: "virtualblocks-servers.firebaseapp.com",
+    databaseURL: "https://virtualblocks-servers-default-rtdb.firebaseio.com",
+    projectId: "virtualblocks-servers",
+    storageBucket: "virtualblocks-servers.appspot.com",
+    messagingSenderId: "796633829717",
+    appId: "1:796633829717:web:fcbd2d376565b0160e1fdc"
+};
 
-        function startGame() {
-            db.ref("players/" + uid).set({ x: 100, y: 100 });
-            db.ref("players").on("value", snapshot => {
-                players = snapshot.val() || {};
-                drawGame();
-            });
-            window.addEventListener("keydown", movePlayer);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const images = ["player.png"];
+let player = { id: null, x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 30, image: "", name: "", score: 0 };
+let players = {};
+let points = [];
+let targetX = player.x;
+let targetY = player.y;
+let hasLost = false;
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;
+        player.name = user.displayName || "Anónimo";
+        player.image = images[Math.floor(Math.random() * images.length)];
+        db.ref(`players/${player.id}`).set(player);
+
+        db.ref("players").on("value", snapshot => {
+            players = snapshot.val() || {};
+            updateLeaderboard();
+        });
+
+        db.ref("points").once("value", snapshot => {
+            points = snapshot.val() || [];
+            if (points.length === 0) generatePoints();
+        });
+
+        window.addEventListener("mousemove", e => {
+            targetX = e.clientX;
+            targetY = e.clientY;
+        });
+
+        window.addEventListener("beforeunload", () => {
+            db.ref(`players/${player.id}`).remove().then(() => checkEmptyServer());
+        });
+
+        setInterval(spawnPoints, 60000);
+        gameLoop();
+    } else {
+        window.location.href = "index.html";
+    }
+});
+
+function generatePoints() {
+    points = [];
+    for (let i = 0; i < 100; i++) {
+        points.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 5 });
+    }
+    db.ref("points").set(points);
+}
+
+function spawnPoints() {
+    for (let i = 0; i < 20; i++) {
+        points.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 5 });
+    }
+    db.ref("points").set(points);
+}
+
+function checkEmptyServer() {
+    db.ref("players").once("value", snapshot => {
+        if (!snapshot.exists()) generatePoints();
+    });
+}
+
+function updateLeaderboard() {
+    const leaderboard = document.getElementById("leaderboard");
+    leaderboard.innerHTML = "<b>Leaderboard</b><br>";
+    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+    sorted.forEach(p => {
+        leaderboard.innerHTML += `${p.name}: ${p.score} puntos<br>`;
+    });
+}
+
+function checkCollisions() {
+    points = points.filter(p => {
+        const dist = Math.hypot(player.x - p.x, player.y - p.y);
+        if (dist < player.size) {
+            if (player.score < 300) {
+                player.size = Math.min(player.size + 0.1, 100);
+                player.score += 0.1;
+            }
+            if (player.score >= 470) {
+                  db.ref(`players/${player.id}`).remove().then(() => {
+                  window.location.href = "ganaste.html";
+               });
+            }
+            return false;
         }
-        
-        function movePlayer(e) {
-            let player = players[uid];
-            if (!player) return;
-            if (e.key === "ArrowUp") player.y -= 10;
-            if (e.key === "ArrowDown") player.y += 10;
-            if (e.key === "ArrowLeft") player.x -= 10;
-            if (e.key === "ArrowRight") player.x += 10;
-            db.ref("players/" + uid).set(player);
-        }
-        
-        function drawGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let id in players) {
-                let p = players[id];
-                ctx.drawImage(playerImg, p.x, p.y, 50, 50);
+        return true;
+    });
+
+    for (const id in players) {
+        if (id !== player.id) {
+            const p = players[id];
+            const dist = Math.hypot(player.x - p.x, player.y - p.y);
+            if (dist < player.size && player.size > p.size) {
+                player.size += p.size / 10;
+                player.score += p.score;
+                db.ref(`players/${id}`).remove();
+            } else if (dist < p.size && p.size > player.size) {
+                if (!hasLost) {
+                    hasLost = true;
+                    setTimeout(() => hasLost = false, 5000);
+                    db.ref(`players/${player.id}`).remove().then(() => {
+                        window.location.href = "perdiste.html";
+                    });
+                }
             }
         }
+    }
+    db.ref("points").set(points);
+}
 
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) { uid = user.uid; startGame(); }
-            else login();
-        });
-    </script>
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    player.x += (targetX - player.x) * 0.02;
+    player.y += (targetY - player.y) * 0.02;
+
+    points.forEach(p => {
+        ctx.font = "20px Arial"; // Cambia '20px' por el tamaño que prefieras
+        ctx.fillStyle = "green";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    for (const id in players) {
+        const p = players[id];
+        const img = new Image();
+        img.src = p.image;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+        ctx.restore();
+        ctx.fillStyle = "black";
+        ctx.fillText(p.name, p.x - 20, p.y - p.size - 10);
+    }
+
+    checkCollisions();
+    db.ref(`players/${player.id}`).set(player);
+    requestAnimationFrame(gameLoop);
+}
+</script>
 </body>
 </html>
