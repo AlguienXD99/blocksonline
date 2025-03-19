@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing</title>
+    <title>VirtualBlocks</title>
     <style>
         body { margin: 0; background: white; overflow: hidden; }
         canvas { display: block; }
-        #leaderboard { 
-            position: absolute; 
-            top: 10px; 
-            left: 10px; 
-            background: rgba(0, 0, 0, 0.7); 
-            color: white; 
-            padding: 10px; 
-            border-radius: 5px; 
+        #leaderboard, #gui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
             font-family: Arial, sans-serif;
+        }
+        #gui {
+            top: 60px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <div id="leaderboard">Leaderboard</div>
+<div id="gui">[E] Equipar/Desequipar Espada</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -48,52 +53,21 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const images = ["player.png"];
-let player = { id: null, x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 30, image: "", name: "", score: 0 };
+const swordImage = new Image();
+swordImage.src = "sword.png"; 
+
+let player = { id: null, x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 30, name: "", health: 100, hasSword: false };
 let players = {};
-let points = [];
-let targetX = player.x;
-let targetY = player.y;
-let hasLost = false;
-
-function signInWithEmail() {
-    const email = prompt("Ingrese su correo electrónico:");
-    const password = prompt("Ingrese su contraseña:");
-
-    auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-            console.log("Inicio de sesión exitoso");
-        })
-        .catch(error => {
-            if (error.code === "auth/user-not-found") {
-                auth.createUserWithEmailAndPassword(email, password)
-                    .then(userCredential => {
-                        console.log("Cuenta creada exitosamente");
-                    })
-                    .catch(error => {
-                        console.error("Error al registrar:", error.message);
-                    });
-            } else {
-                console.error("Error de autenticación:", error.message);
-            }
-        });
-}
+let targetX = player.x, targetY = player.y;
 
 auth.onAuthStateChanged(user => {
     if (user) {
         player.id = user.uid;
-        player.name = user.email.split("@")[0] || "Anónimo"; 
-        player.image = images[Math.floor(Math.random() * images.length)];
+        player.name = user.email.split("@")[0] || "Anónimo";
         db.ref(`players/${player.id}`).set(player);
-
         db.ref("players").on("value", snapshot => {
             players = snapshot.val() || {};
             updateLeaderboard();
-        });
-
-        db.ref("points").once("value", snapshot => {
-            points = snapshot.val() || [];
-            if (points.length === 0) generatePoints();
         });
 
         window.addEventListener("mousemove", e => {
@@ -102,72 +76,77 @@ auth.onAuthStateChanged(user => {
         });
 
         window.addEventListener("beforeunload", () => {
-            db.ref(`players/${player.id}`).remove().then(() => checkEmptyServer());
+            db.ref(`players/${player.id}`).remove();
         });
 
-        setInterval(spawnPoints, 60000);
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "e") toggleSword();
+            if (e.key === " ") attack();
+        });
+
         gameLoop();
-    } else {
-        signInWithEmail();
     }
 });
 
-function generatePoints() {
-    points = [];
-    for (let i = 0; i < 100; i++) {
-        points.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 5 });
-    }
-    db.ref("points").set(points);
+function toggleSword() {
+    player.hasSword = !player.hasSword;
+    db.ref(`players/${player.id}/hasSword`).set(player.hasSword);
 }
 
-function spawnPoints() {
-    for (let i = 0; i < 20; i++) {
-        points.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 5 });
-    }
-    db.ref("points").set(points);
-}
+function attack() {
+    if (!player.hasSword) return;
+    
+    for (const id in players) {
+        if (id !== player.id) {
+            const enemy = players[id];
+            const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            if (distance < 50) {
+                let newHealth = Math.max(0, enemy.health - 20);
+                db.ref(`players/${id}/health`).set(newHealth);
 
-function checkEmptyServer() {
-    db.ref("players").once("value", snapshot => {
-        if (!snapshot.exists()) generatePoints();
-    });
+                if (newHealth === 0) {
+                    db.ref(`players/${id}`).set({ id: id, x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: 30, name: enemy.name, health: 100, hasSword: false });
+                }
+            }
+        }
+    }
 }
 
 function updateLeaderboard() {
     const leaderboard = document.getElementById("leaderboard");
     leaderboard.innerHTML = "<b>Leaderboard</b><br>";
-    const sorted = Object.values(players).sort((a, b) => b.score - a.score);
-    sorted.forEach(p => {
-        leaderboard.innerHTML += `${p.name}: ${p.score} puntos<br>`;
-    });
+    for (const id in players) {
+        const p = players[id];
+        leaderboard.innerHTML += `${p.name}: ${p.health} HP<br>`;
+    }
 }
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
     player.x += (targetX - player.x) * 0.02;
     player.y += (targetY - player.y) * 0.02;
 
-    points.forEach(p => {
-        ctx.fillStyle = "green";
+    for (const id in players) {
+        const p = players[id];
+
+        ctx.fillStyle = "blue";
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
-    });
 
-    for (const id in players) {
-        const p = players[id];
-        const img = new Image();
-        img.src = p.image;
-
-        ctx.drawImage(img, p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
         ctx.fillStyle = "black";
         ctx.fillText(p.name, p.x - 20, p.y - p.size - 10);
+        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + p.size + 10);
+
+        if (p.hasSword) {
+            ctx.drawImage(swordImage, p.x + 20, p.y - 10, 30, 30);
+        }
     }
 
     requestAnimationFrame(gameLoop);
 }
 
-// Se actualiza solo si hay cambios significativos
 setInterval(() => {
     db.ref(`players/${player.id}`).set(player);
 }, 1000);
