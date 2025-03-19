@@ -10,7 +10,7 @@
         #leaderboard {
             position: absolute;
             top: 10px;
-            left: 1050px;
+            left: 500px;
             background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 10px;
@@ -59,6 +59,41 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 const canvas = document.getElementById("gameCanvas");
+    // Cargar la imagen de fondo
+const backgroundImg = new Image();
+backgroundImg.src = "fondo.png"; // Asegúrate de tener esta imagen en la misma carpeta o proporciona la URL correcta.
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Dibujar el fondo antes de cualquier otro objeto
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+    // Suavizar el movimiento
+    player.x += (targetX - player.x) * 0.1;
+    player.y += (targetY - player.y) * 0.1;
+
+    for (const id in players) {
+        const p = players[id];
+
+        // Dibujar jugador
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+        // Dibujar nombre y vida
+        ctx.fillStyle = "black";
+        ctx.font = "14px Arial";
+        ctx.fillText(p.name, p.x - 20, p.y - 30);
+        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+        // Dibujar espada si la tiene equipada
+        if (p.hasSword) {
+            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+        }
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
