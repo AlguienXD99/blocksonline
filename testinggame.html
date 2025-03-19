@@ -34,7 +34,21 @@
     </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<style>
+    #gameContainer {
+        background: linear-gradient(to bottom, skyblue 50%, white 50%); /* Degradado de celeste a blanco */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh; /* Toda la pantalla */
+        width: 100vw; /* Todo el ancho */
+    }
+</style>
+
 <div id="leaderboard">Leaderboard</div>
 <div id="gui">[E] Equipar/Desequipar Espada | [Espacio] Atacar</div>
 
