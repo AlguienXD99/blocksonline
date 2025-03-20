@@ -135,35 +135,69 @@ let player = {
 };
 
 let players = {};
-let targetX = player.x, targetY = player.y;
+// Variables para el control de movimiento
+let keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false
+};
 
-auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;
-        player.name = user.email.split("@")[0] || "Anónimo";
-        db.ref(`players/${player.id}`).set(player);
-        db.ref("players").on("value", snapshot => {
-            players = snapshot.val() || {};
-            updateLeaderboard();
-        });
-
-        window.addEventListener("mousemove", e => {
-            targetX = e.clientX;
-            targetY = e.clientY;
-        });
-
-        window.addEventListener("beforeunload", () => {
-            db.ref(`players/${player.id}`).remove();
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "e") toggleSword();
-            if (e.key === " ") attack();
-        });
-
-        gameLoop();
-    }
+// **EVENTOS PARA TECLADO (PC)**
+document.addEventListener("keydown", (e) => {
+    if (e.key === "e") toggleSword();
+    if (e.key === " ") attack();
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
 });
+
+document.addEventListener("keyup", (e) => {
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+});
+
+// **MOVIMIENTO DEL JUGADOR CON WASD**
+function movePlayer() {
+    if (keys.w) player.y -= speed;  // Mover arriba
+    if (keys.s) player.y += speed;  // Mover abajo
+    if (keys.a) player.x -= speed;  // Mover izquierda
+    if (keys.d) player.x += speed;  // Mover derecha
+}
+
+// **EVENTOS PARA CONTROLES EN MÓVILES**
+function setupMobileControls() {
+    const controls = document.createElement("div");
+    controls.id = "mobileControls";
+    controls.innerHTML = `
+        <button id="up">▲</button><br>
+        <button id="left">◀</button>
+        <button id="down">▼</button>
+        <button id="right">▶</button>
+    `;
+    document.body.appendChild(controls);
+
+    const up = document.getElementById("up");
+    const down = document.getElementById("down");
+    const left = document.getElementById("left");
+    const right = document.getElementById("right");
+
+    up.addEventListener("touchstart", () => (keys.w = true));
+    up.addEventListener("touchend", () => (keys.w = false));
+    
+    down.addEventListener("touchstart", () => (keys.s = true));
+    down.addEventListener("touchend", () => (keys.s = false));
+    
+    left.addEventListener("touchstart", () => (keys.a = true));
+    left.addEventListener("touchend", () => (keys.a = false));
+    
+    right.addEventListener("touchstart", () => (keys.d = true));
+    right.addEventListener("touchend", () => (keys.d = false));
+}
+
+// **BUCLE PRINCIPAL DEL JUEGO**
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    movePlayer(); // Aplicar el movimiento
+
 
 function toggleSword() {
     player.hasSword = !player.hasSword;
@@ -252,5 +286,31 @@ setInterval(() => {
     db.ref(`players/${player.id}`).set(player);
 }, 1000);
 </script>
+<style>
+/* **ESTILO PARA LOS CONTROLES MÓVILES** */
+#mobileControls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#mobileControls button {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#mobileControls button:active {
+    background: rgba(255, 255, 255, 0.5);
+}
+</style>
 </body>
 </html>
