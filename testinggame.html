@@ -207,19 +207,31 @@ function updateLeaderboard() {
     }
 }
 
+const speed = 5; // Velocidad constante de movimiento
+
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Suavizar el movimiento
-    player.x += (targetX - player.x) * 0.1;
-    player.y += (targetY - player.y) * 0.1;
+
+    // Calcular la dirección hacia el destino
+    let dx = targetX - player.x;
+    let dy = targetY - player.y;
+    let distance = Math.hypot(dx, dy);
+
+    // Mover solo si la distancia es mayor que la velocidad
+    if (distance > speed) {
+        player.x += (dx / distance) * speed;
+        player.y += (dy / distance) * speed;
+    } else {
+        player.x = targetX;
+        player.y = targetY;
+    }
 
     for (const id in players) {
         const p = players[id];
 
         // Dibujar jugador
         ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-        
+
         // Dibujar nombre y vida
         ctx.fillStyle = "black";
         ctx.font = "14px Arial";
