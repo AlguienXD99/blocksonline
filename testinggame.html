@@ -99,38 +99,11 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.1;
     player.y += (targetY - player.y) * 0.1;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar la pantalla
-
     for (const id in players) {
         const p = players[id];
 
-        if (!p.avatarConfig || !p.x || !p.y) continue; // Si no tiene avatar o posición, lo ignoramos
-
-        // Definir tamaño del personaje
-        const size = 50;
-        const halfSize = size / 2;
-        const quarterSize = size / 4;
-
-        // Dibujar las piernas
-        ctx.fillStyle = p.avatarConfig.legs || "gray";
-        ctx.fillRect(p.x - quarterSize, p.y, quarterSize, size / 2); // Pierna izquierda
-        ctx.fillRect(p.x, p.y, quarterSize, size / 2); // Pierna derecha
-
-        // Dibujar los brazos
-        ctx.fillStyle = p.avatarConfig.leftArm || "gray";
-        ctx.fillRect(p.x - halfSize, p.y - quarterSize, quarterSize, size / 2); // Brazo izquierdo
-        ctx.fillStyle = p.avatarConfig.rightArm || "gray";
-        ctx.fillRect(p.x + quarterSize, p.y - quarterSize, quarterSize, size / 2); // Brazo derecho
-
-        // Dibujar el torso
-        ctx.fillStyle = p.avatarConfig.color || "gray";
-        ctx.fillRect(p.x - quarterSize, p.y - quarterSize, size / 2, size / 2);
-
-        // Dibujar la cabeza
-        ctx.fillStyle = p.avatarConfig.head || "gray";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y - halfSize, quarterSize, 0, Math.PI * 2);
-        ctx.fill();
+        // Dibujar jugador
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
         // Dibujar nombre y vida
         ctx.fillStyle = "black";
@@ -264,7 +237,7 @@ function gameLoop() {
         const p = players[id];
 
         // Dibujar jugador
-        // ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
         // Dibujar nombre y vida
         ctx.fillStyle = "black";
