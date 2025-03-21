@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foro con Firebase</title>
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        input, textarea, button { display: block; margin: 10px auto; width: 80%; padding: 8px; }
+        #forum { max-width: 600px; margin: 20px auto; text-align: left; }
+        .post { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .timestamp { color: gray; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <h2>📢 Foro de Blocksonline</h2>
+
+    <!-- Autenticación -->
+    <input type="email" id="email" placeholder="Correo">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button onclick="login()">Iniciar sesión</button>
+    <button onclick="logout()">Cerrar sesión</button>
+
+    <!-- Crear post -->
+    <textarea id="newPost" placeholder="Escribe tu post..."></textarea>
+    <button onclick="createPost()">Publicar</button>
+
+    <!-- Foro -->
+    <div id="forum"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 🔥 Configuración de Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0bBnkE_251NKY",
+                authDomain: "virtualblocks-b7a52.firebaseapp.com",
+                projectId: "virtualblocks-b7a52",
+                storageBucket: "virtualblocks-b7a52.appspot.com",
+                messagingSenderId: "490618182453",
+                appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+            };
+
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+
+            // 🔑 Autenticación
+            window.login = function() {
+                const email = document.getElementById("email").value;
+                const password = document.getElementById("password").value;
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => alert("Inicio de sesión exitoso"))
+                    .catch(error => alert("Error: " + error.message));
+            };
+
+            window.logout = function() {
+                auth.signOut().then(() => alert("Sesión cerrada"));
+            };
+
+            // 🔍 Filtrar enlaces no permitidos
+            function filterText(text) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                return text.replace(urlRegex, url => url.includes("blocksonline.neocities.org") ? url : "[Enlace bloqueado]");
+            }
+
+            // 📢 Crear post en el foro
+            window.createPost = function() {
+                const content = document.getElementById("newPost").value.trim();
+                const user = auth.currentUser;
+
+                if (!user) {
+                    alert("Debes iniciar sesión para publicar.");
+                    return;
+                }
+
+                if (content === "") {
+                    alert("No puedes publicar un post vacío.");
+                    return;
+                }
+
+                db.collection("posts").add({
+                    content: filterText(content),
+                    user: user.email,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    document.getElementById("newPost").value = "";
+                });
+            };
+
+            // 🔄 Cargar posts en tiempo real
+            db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+                const forum = document.getElementById("forum");
+                forum.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.timestamp?.toDate() || new Date();
+                    forum.innerHTML += `
+                        <div class="post">
+                            <strong>${data.user}</strong>: ${data.content}
+                            <div class="timestamp">${date.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
