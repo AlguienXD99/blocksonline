@@ -76,6 +76,13 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 const canvas = document.getElementById("gameCanvas");
+    
+// Cargar la imagen de fondo
+const backgroundImg = new Image();
+backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta correcta
+backgroundImg.onload = () => {
+    gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
+};
 
 function gameLoop() {
     // Dibujar la imagen de fondo
@@ -205,39 +212,36 @@ const speed = 5; // Velocidad constante de movimiento
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Dibujar a todos los jugadores
+    // Calcular la dirección hacia el destino
+    let dx = targetX - player.x;
+    let dy = targetY - player.y;
+    let distance = Math.hypot(dx, dy);
+
+    // Mover solo si la distancia es mayor que la velocidad
+    if (distance > speed) {
+        player.x += (dx / distance) * speed;
+        player.y += (dy / distance) * speed;
+    } else {
+        player.x = targetX;
+        player.y = targetY;
+    }
+
     for (const id in players) {
         const p = players[id];
-        if (!p.avatarConfig) continue;
 
-        const { head, leftArm, rightArm, legs, leftLeg, rightLeg } = p.avatarConfig;
+        // Dibujar jugador
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-        // Dibujar cabeza
-        ctx.fillStyle = head;
-        ctx.fillRect(p.x - 15, p.y - 40, 30, 30);
-
-        // Dibujar torso
-        ctx.fillStyle = legs;
-        ctx.fillRect(p.x - 15, p.y - 10, 30, 40);
-
-        // Dibujar brazos
-        ctx.fillStyle = leftArm;
-        ctx.fillRect(p.x - 30, p.y - 10, 15, 30);
-
-        ctx.fillStyle = rightArm;
-        ctx.fillRect(p.x + 15, p.y - 10, 15, 30);
-
-        // Dibujar piernas
-        ctx.fillStyle = leftLeg;
-        ctx.fillRect(p.x - 15, p.y + 30, 15, 30);
-
-        ctx.fillStyle = rightLeg;
-        ctx.fillRect(p.x, p.y + 30, 15, 30);
-
-        // Dibujar nombre
+        // Dibujar nombre y vida
         ctx.fillStyle = "black";
         ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 50);
+        ctx.fillText(p.name, p.x - 20, p.y - 30);
+        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+        // Dibujar espada si la tiene equipada
+        if (p.hasSword) {
+            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+        }
     }
 
     requestAnimationFrame(gameLoop);
