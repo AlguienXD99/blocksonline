@@ -26,7 +26,9 @@
     <button onclick="logout()">Cerrar sesión</button>
 
     <!-- Crear post -->
-    <textarea id="newPost" placeholder="Escribe tu post..."></textarea>
+    <input type="text" id="subject" placeholder="Asunto">
+    <input type="text" id="title" placeholder="Título">
+    <textarea id="content" placeholder="Escribe tu contenido..."></textarea>
     <button onclick="createPost()">Publicar</button>
 
     <!-- Foro -->
@@ -34,7 +36,6 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // 🔥 Configuración de Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
                 authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -44,12 +45,10 @@
                 appId: "1:490618182453:web:93385819c7ff08537d8a7c"
             };
 
-            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
             const db = firebase.firestore();
 
-            // 🔑 Autenticación
             window.login = function() {
                 const email = document.getElementById("email").value;
                 const password = document.getElementById("password").value;
@@ -62,15 +61,15 @@
                 auth.signOut().then(() => alert("Sesión cerrada"));
             };
 
-            // 🔍 Filtrar enlaces no permitidos
             function filterText(text) {
                 const urlRegex = /(https?:\/\/[^\s]+)/g;
                 return text.replace(urlRegex, url => url.includes("blocksonline.neocities.org") ? url : "[Enlace bloqueado]");
             }
 
-            // 📢 Crear post en el foro
             window.createPost = function() {
-                const content = document.getElementById("newPost").value.trim();
+                const subject = document.getElementById("subject").value.trim();
+                const title = document.getElementById("title").value.trim();
+                const content = document.getElementById("content").value.trim();
                 const user = auth.currentUser;
 
                 if (!user) {
@@ -78,21 +77,29 @@
                     return;
                 }
 
-                if (content === "") {
-                    alert("No puedes publicar un post vacío.");
+                if (!subject || !title || !content) {
+                    alert("Todos los campos son obligatorios.");
+                    return;
+                }
+
+                if (title.length > 100 || content.length > 500) {
+                    alert("El título debe tener menos de 100 caracteres y el contenido menos de 500.");
                     return;
                 }
 
                 db.collection("posts").add({
+                    subject: filterText(subject),
+                    title: filterText(title),
                     content: filterText(content),
                     user: user.email,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
-                    document.getElementById("newPost").value = "";
+                    document.getElementById("subject").value = "";
+                    document.getElementById("title").value = "";
+                    document.getElementById("content").value = "";
                 });
             };
 
-            // 🔄 Cargar posts en tiempo real
             db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
                 const forum = document.getElementById("forum");
                 forum.innerHTML = "";
@@ -101,7 +108,10 @@
                     const date = data.timestamp?.toDate() || new Date();
                     forum.innerHTML += `
                         <div class="post">
-                            <strong>${data.user}</strong>: ${data.content}
+                            <strong>${data.user}</strong><br>
+                            <strong>Asunto:</strong> ${data.subject}<br>
+                            <strong>Título:</strong> ${data.title}<br>
+                            <p>${data.content}</p>
                             <div class="timestamp">${date.toLocaleString()}</div>
                         </div>
                     `;
