@@ -9,20 +9,20 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
 </head>
 <body>
-    <h2>Iniciar Sesión</h2>
+    <h2>Chat con Firebase</h2>
+    
     <input type="email" id="email" placeholder="Correo">
     <input type="password" id="password" placeholder="Contraseña">
-    <button onclick="register()">Registrarse</button>
     <button onclick="login()">Iniciar sesión</button>
     <button onclick="logout()">Cerrar sesión</button>
 
-    <h2>Chat</h2>
     <div id="chat"></div>
-    <input type="text" id="message" placeholder="Escribe un mensaje...">
+    
+    <input type="text" id="message" placeholder="Escribe un mensaje">
     <button onclick="sendMessage()">Enviar</button>
 
     <script>
-        // 🔥 Configuración de Firebase (REEMPLAZA ESTOS DATOS)
+        // 🔥 Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
   authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -33,59 +33,57 @@ const firebaseConfig = {
   appId: "1:490618182453:web:93385819c7ff08537d8a7c"
 };
 
+        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
         // 🔑 Autenticación con correo y contraseña
-        function register() {
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(() => alert("Usuario registrado"))
-                .catch(error => alert(error.message));
-        }
-
         function login() {
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             auth.signInWithEmailAndPassword(email, password)
-                .then(() => alert("Sesión iniciada"))
-                .catch(error => alert(error.message));
+                .then(userCredential => {
+                    alert("Inicio de sesión exitoso");
+                })
+                .catch(error => {
+                    alert("Error: " + error.message);
+                });
         }
 
         function logout() {
-            auth.signOut().then(() => alert("Sesión cerrada"));
+            auth.signOut().then(() => {
+                alert("Sesión cerrada");
+            });
         }
 
-        // 🔥 Enviar mensajes al chat
+        // 📨 Enviar mensaje al chat
         function sendMessage() {
             const message = document.getElementById("message").value;
-            if (!message) return;
+            const user = auth.currentUser;
+
+            if (!user) {
+                alert("Inicia sesión para enviar mensajes.");
+                return;
+            }
+
             db.collection("messages").add({
                 text: message,
-                user: auth.currentUser.email,
+                user: user.email,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            document.getElementById("message").value = "";
         }
 
-        // 🔥 Mostrar mensajes en tiempo real
+        // 📩 Escuchar mensajes en tiempo real
         db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
             const chat = document.getElementById("chat");
             chat.innerHTML = "";
             snapshot.forEach(doc => {
                 const data = doc.data();
-                chat.innerHTML += `<p><b>${data.user}:</b> ${data.text}</p>`;
+                chat.innerHTML += `<p><strong>${data.user}:</strong> ${data.text}</p>`;
             });
         });
 
-        // 🔒 Redirigir si no está autenticado
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-                alert("Debes iniciar sesión");
-            }
-        });
     </script>
 </body>
 </html>
