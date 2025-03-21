@@ -42,14 +42,21 @@
 </div>
 
 <style>
-    #gameContainer {
-        background: linear-gradient(to bottom, skyblue 50%, gray 50%); /* Degradado de celeste a blanco */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh; /* Toda la pantalla */
-        width: 100vw; /* Todo el ancho */
-    }
+   #gameContainer {
+    background: linear-gradient(to bottom, skyblue 50%, gray 50%); /* Degradado de celeste a gris */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Toda la pantalla */
+    width: 100vw; /* Todo el ancho */
+
+    /* Corrección de background-image */
+    background-image: url('fondo.png'); 
+    background-repeat: no-repeat;
+    background-size: cover; /* Ajusta la imagen para cubrir todo el contenedor */
+    background-position: center; /* Centra la imagen */
+}
+
 </style>
 
 <div id="leaderboard">Leaderboard</div>
