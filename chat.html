@@ -64,7 +64,15 @@ const firebaseConfig = {
                     alert("Sesión cerrada");
                 });
             };
-
+            // 🔍 Función para filtrar enlaces no permitidos
+            function filterMessage(text) {
+                const urlRegex = /(https?:\/\/[^\s]+)/g;
+                return text.replace(urlRegex, (url) => {
+                    return url.includes("blocksonline.neocities.org") 
+                        ? url 
+                        : "#".repeat(url.length);
+                });
+            }
             // 📨 Enviar mensaje al chat
             window.sendMessage = function() {
                 const message = document.getElementById("message").value;
