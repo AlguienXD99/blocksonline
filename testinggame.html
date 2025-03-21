@@ -259,5 +259,51 @@ setInterval(() => {
     db.ref(`players/${player.id}`).set(player);
 }, 1000);
 </script>
+
+    <div id="controls">
+    <button id="equipButton">Equipar Espada</button>
+    <button id="unequipButton">Desequipar Espada</button>
+    <button id="attackButton">Atacar</button>
+</div>
+
+<style>
+    #controls {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+    }
+    
+    button {
+        background-color: black;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    button:hover {
+        background-color: gray;
+    }
+</style>
+
+<script>
+    document.getElementById("equipButton").addEventListener("click", () => {
+        player.hasSword = true;
+        db.ref(`players/${player.id}/hasSword`).set(true);
+    });
+
+    document.getElementById("unequipButton").addEventListener("click", () => {
+        player.hasSword = false;
+        db.ref(`players/${player.id}/hasSword`).set(false);
+    });
+
+    document.getElementById("attackButton").addEventListener("click", attack);
+</script>
+
 </body>
 </html>
