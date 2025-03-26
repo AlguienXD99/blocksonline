@@ -18,9 +18,22 @@
   messagingSenderId: "490618182453",
   appId: "1:490618182453:web:93385819c7ff08537d8a7c"
 };
+        // 📌 Inicializa Firebase
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // 🆔 Verificar si el usuario ya está autenticado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById("login").style.display = "none";
+                document.getElementById("adminPanel").style.display = "block";
+                loadBanner();
+            } else {
+                document.getElementById("login").style.display = "block";
+                document.getElementById("adminPanel").style.display = "none";
+            }
+        });
         // Verificar la contraseña
         async function checkPassword() {
             const inputPassword = document.getElementById("password").value;
