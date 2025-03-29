@@ -99,7 +99,7 @@ async function changeAvatarColor(bodyPart, color) {
 }
 
 // 🔹 Función para comprar artículos con Blocksgolds
-async function buyItem(itemName, itemPrice) {
+async function buyItem(itemName, itemPrice, itemImage) {
     const user = auth.currentUser;
     if (user) {
         const userRef = ref(db, "users/" + user.uid);
@@ -224,6 +224,13 @@ async function equipItem(itemName) {
             <button class="button" onclick="buyItem('TShirtItem', 50)">Buy</button>
             <button class="button" onclick="equipItem('TShirtItem')">Equip</button>
             <button class="button" onclick="unequipItem('TShirtItem')">Unequip</button>
+        </div>
+        <div class="item">
+            <img src="apriliscoming.png" alt="April T-shirt Item">
+            <p>April is comming - 50 Coins</p>
+            <button class="button" onclick="buyItem('AprilT-Shirt', 50)">Buy</button>
+            <button class="button" onclick="equipItem('AprilT-Shirt')">Equip</button>
+            <button class="button" onclick="unequipItem('AprilT-Shirt')">Unequip</button>
         </div>
     </div>
     <div>
