@@ -8,19 +8,19 @@
         // Importa Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
         import { getFirestore, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
         // Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
 
         // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
@@ -44,9 +44,10 @@ const firebaseConfig = {
 
             const userId = user.uid;
             const codeRef = doc(firestore, "giftcards", code);
-            const userRef = ref(realtimeDB, `${userId}/blocksgold`);
+            const userRef = ref(realtimeDB, `users/${userId}/blocksgold`); // 🔥 CORREGIDO: Referencia correcta
 
             try {
+                // Obtener el código de Firestore
                 const codeSnap = await getDoc(codeRef);
                 if (!codeSnap.exists()) {
                     alert("Código inválido o ya canjeado.");
@@ -55,10 +56,14 @@ const firebaseConfig = {
 
                 const amount = codeSnap.data().amount;
                 
+                // Obtener los Blocksgold actuales del usuario
                 const userSnap = await get(userRef);
                 let currentGold = userSnap.exists() ? userSnap.val() : 0;
                 
-                await update(userRef, { blocksgold: currentGold + amount });
+                // 🔥 CORREGIDO: Se usa `set()` en lugar de `update()`
+                await set(userRef, currentGold + amount);
+                
+                // Eliminar la giftcard después de usarla
                 await deleteDoc(codeRef);
 
                 alert(`Has recibido ${amount} BLOCKSGOLD`);
