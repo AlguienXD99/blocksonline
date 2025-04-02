@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim your reward!</title>
+    <script type="module">
+        // Importa Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+        import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+        // Configuración de Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+  authDomain: "virtualblocks-b7a52.firebaseapp.com",
+  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+  projectId: "virtualblocks-b7a52",
+  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  messagingSenderId: "490618182453",
+  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+        const realtimeDB = getDatabase(app);
+        const auth = getAuth(app);
+
+        // Función para canjear código
+        async function redeemGiftCard() {
+            const code = document.getElementById("giftCode").value.trim();
+            if (!code) {
+                alert("Ingresa un código válido.");
+                return;
+            }
+
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Debes iniciar sesión para canjear una tarjeta de regalo.");
+                return;
+            }
+
+            const userId = user.uid;
+            const codeRef = doc(firestore, "giftcards", code);
+            const userRef = ref(realtimeDB, `${userId}/blocksgold`);
+
+            try {
+                const codeSnap = await getDoc(codeRef);
+                if (!codeSnap.exists()) {
+                    alert("Código inválido o ya canjeado.");
+                    return;
+                }
+
+                const amount = codeSnap.data().amount;
+                
+                const userSnap = await get(userRef);
+                let currentGold = userSnap.exists() ? userSnap.val() : 0;
+                
+                await update(userRef, { blocksgold: currentGold + amount });
+                await deleteDoc(codeRef);
+
+                alert(`Has recibido ${amount} BLOCKSGOLD`);
+                document.getElementById("giftCode").value = ""; // Limpiar el campo
+            } catch (error) {
+                console.error("Error al canjear código:", error);
+                alert("Hubo un problema al canjear el código.");
+            }
+        }
+
+        // Verificar si el usuario está autenticado
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById("authStatus").innerText = `Bienvenido, ${user.email}`;
+            } else {
+                document.getElementById("authStatus").innerText = "No has iniciado sesión.";
+            }
+        });
+
+        // Hacer accesible la función en HTML
+        window.redeemGiftCard = redeemGiftCard;
+    </script>
+</head>
+<body>
+    <h1>Canjear Tarjeta de Regalo</h1>
+    <p id="authStatus">Verificando autenticación...</p>
+    
+    <input type="text" id="giftCode" placeholder="Ingresa el código aquí">
+    <button onclick="redeemGiftCard()">Canjear</button>
+</body>
+</html>
