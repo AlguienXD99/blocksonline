@@ -90,6 +90,44 @@ backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta 
 backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
+let firebaseError = ""; // Variable para almacenar el error
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;
+        player.name = user.email.split("@")[0] || "Anónimo";
+        db.ref(`players/${player.id}`).set(player).catch(error => {
+            firebaseError = error.message; // Captura errores de autenticación
+        });
+
+        db.ref("players").on("value", snapshot => {
+            players = snapshot.val() || {};
+            updateLeaderboard();
+        }, error => {
+            firebaseError = error.message; // Captura errores de lectura de la base de datos
+        });
+
+        window.addEventListener("mousemove", e => {
+            targetX = e.clientX;
+            targetY = e.clientY;
+        });
+
+        window.addEventListener("beforeunload", () => {
+            db.ref(`players/${player.id}`).remove().catch(error => {
+                firebaseError = error.message; // Captura errores al eliminar datos
+            });
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "e") toggleSword();
+            if (e.key === " ") attack();
+        });
+
+        gameLoop();
+    } else {
+        firebaseError = "No se ha iniciado sesión.";
+    }
+});
 
 function gameLoop() {
     // Dibujar la imagen de fondo
@@ -115,6 +153,13 @@ function gameLoop() {
         if (p.hasSword) {
             ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
         }
+    }
+
+    // Mostrar errores de Firebase en el canvas
+    if (firebaseError) {
+        ctx.fillStyle = "red";
+        ctx.font = "16px Arial";
+        ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
     }
 
     requestAnimationFrame(gameLoop);
