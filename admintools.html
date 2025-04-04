@@ -24,66 +24,78 @@
   <div id="displayText"></div>
 
   <script>
+    // Configuración de Firebase
     const firebaseConfig = {
-       apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-       authDomain: "virtualblocks-b7a52.firebaseapp.com",
-       databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-       projectId: "virtualblocks-b7a52",
-       storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-       messagingSenderId: "490618182453",
-       appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+      apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+      authDomain: "virtualblocks-b7a52.firebaseapp.com",
+      projectId: "virtualblocks-b7a52",
+      storageBucket: "virtualblocks-b7a52.appspot.com",
+      messagingSenderId: "490618182453",
+      appId: "1:490618182453:web:93385819c7ff08537d8a7c"
     };
-    
-    const app = firebase.initializeApp(firebaseConfig);
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Función para autenticar con contraseña
+    // Credenciales predefinidas
+    const adminEmail = "unlucky123@blocksonline.net";
+    const adminPassword = "contraseñaSuperSecreta"; // Cambia esto en producción
+
+    // Autenticación con contraseña
     function login() {
       const password = document.getElementById("passwordInput").value;
-      
-      // Autenticación de usuario usando la contraseña
-      auth.signInWithEmailAndPassword("unlucky123@blocksonline.net", password)
-        .then(() => {
-          document.getElementById("inputSection").style.display = "block";  // Muestra el área para agregar texto
-        })
-        .catch((error) => {
-          alert("Contraseña incorrecta.");
-        });
+
+      if (password === adminPassword) {
+        auth.signInWithEmailAndPassword(adminEmail, adminPassword)
+          .then(() => {
+            document.getElementById("inputSection").style.display = "block"; // Mostrar área de texto
+            displayText(); // Mostrar texto guardado
+          })
+          .catch((error) => {
+            alert("Error en la autenticación: " + error.message);
+          });
+      } else {
+        alert("Contraseña incorrecta.");
+      }
     }
 
-    // Función para guardar texto en Firestore
+    // Guardar texto en Firestore
     function saveText() {
       const userText = document.getElementById("textInput").value;
-      const userId = auth.currentUser.uid;  // Obtén el ID del usuario autenticado
-      
-      // Guarda el texto en Firestore
-      db.collection("texts").doc(userId).set({
-        text: userText
-      })
-      .then(() => {
-        alert("Texto guardado exitosamente.");
-        displayText();  // Muestra el texto guardado en la otra página
-      })
-      .catch((error) => {
-        alert("Error al guardar el texto: " + error.message);
-      });
-    }
 
-    // Función para mostrar el texto guardado
-    function displayText() {
-      const userId = auth.currentUser.uid;
-      db.collection("texts").doc(userId).get()
-        .then((doc) => {
-          if (doc.exists) {
-            document.getElementById("displayText").innerText = doc.data().text;
-          } else {
-            document.getElementById("displayText").innerText = "No hay texto guardado.";
-          }
+      if (auth.currentUser) {
+        db.collection("texts").doc(auth.currentUser.uid).set({
+          text: userText
+        })
+        .then(() => {
+          alert("Texto guardado exitosamente.");
+          displayText();
         })
         .catch((error) => {
-          alert("Error al obtener el texto: " + error.message);
+          alert("Error al guardar el texto: " + error.message);
         });
+      } else {
+        alert("No estás autenticado.");
+      }
+    }
+
+    // Mostrar el texto guardado
+    function displayText() {
+      if (auth.currentUser) {
+        db.collection("texts").doc(auth.currentUser.uid).get()
+          .then((doc) => {
+            if (doc.exists) {
+              document.getElementById("displayText").innerText = doc.data().text;
+            } else {
+              document.getElementById("displayText").innerText = "No hay texto guardado.";
+            }
+          })
+          .catch((error) => {
+            alert("Error al obtener el texto: " + error.message);
+          });
+      }
     }
   </script>
 </body>
