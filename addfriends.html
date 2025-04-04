@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Añadir Amigos - Blocksonline</title>
     <style>
-        /* Los estilos siguen igual */
-                body {
+        body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -76,7 +75,7 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        // Configuración de Firebase
+        // Firebase config
         const firebaseConfig = {
           apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
           authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -108,67 +107,52 @@
             }
 
             try {
-                // Verificar si el correo electrónico existe en Firebase Authentication
-                const methods = await fetchSignInMethodsForEmail(auth, friendEmail);
+                // Verificar si el correo existe en Firebase Authentication
+                const signInMethods = await fetchSignInMethodsForEmail(auth, friendEmail);
 
-                if (methods.length === 0) {
+                if (signInMethods.length === 0) {
                     document.getElementById('error').innerText = 'No se encontró ese correo. Asegúrate de que esté registrado.';
                     return;
                 }
 
-                // Si el correo existe, obtén el UID asociado
-                const userRecord = await auth.getUserByEmail(friendEmail); // Obtén el UID del correo
-                const friendUid = userRecord.uid;
+                // Obtener UID de la persona a la que se le envía la solicitud
+                const friendUid = await getUidFromEmail(friendEmail);
+
+                if (!friendUid) {
+                    document.getElementById('error').innerText = 'No se encontró ese correo.';
+                    return;
+                }
 
                 // Guardar la solicitud de amistad en la base de datos
                 const requestRef = ref(database, 'friendRequests/' + friendUid);
-                await push(requestRef, {
+                push(requestRef, {
                     from: user.uid,
                     status: 'pending'  // Estado de la solicitud
+                }).then(() => {
+                    alert('Solicitud de amistad enviada.');
+                }).catch((error) => {
+                    document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
                 });
-
-                alert('Solicitud de amistad enviada.');
             } catch (error) {
-                document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
+                document.getElementById('error').innerText = 'Error al verificar el correo: ' + error.message;
             }
         }
 
-        // Función para aceptar una solicitud de amistad
-        function acceptFriendRequest(requestId, friendUid) {
-            const user = auth.currentUser;
+        // Función para obtener el UID de un correo (implementación de ejemplo)
+        async function getUidFromEmail(email) {
+            // Aquí deberías implementar la lógica para obtener el UID de la base de datos
+            const usersRef = ref(database, 'users');
+            const snapshot = await get(usersRef);
 
-            // Mover la solicitud a la lista de amigos
-            const friendsRef = ref(database, 'friends/' + user.uid);
-            update(friendsRef, {
-                [friendUid]: true
-            }).then(() => {
-                // Eliminar la solicitud pendiente
-                const requestRef = ref(database, 'friendRequests/' + friendUid + '/' + requestId);
-                update(requestRef, {
-                    status: 'accepted'
-                }).then(() => {
-                    alert('Amistad aceptada.');
-                    loadPendingRequests();  // Recargar solicitudes
-                }).catch((error) => {
-                    console.error('Error al aceptar solicitud:', error);
-                });
-            });
-        }
-
-        // Función para rechazar (cancelar) una solicitud de amistad
-        function cancelFriendRequest(requestId, friendUid) {
-            const user = auth.currentUser;
-
-            // Eliminar la solicitud pendiente
-            const requestRef = ref(database, 'friendRequests/' + friendUid + '/' + requestId);
-            update(requestRef, {
-                status: 'canceled'
-            }).then(() => {
-                alert('Solicitud cancelada.');
-                loadPendingRequests();  // Recargar solicitudes
-            }).catch((error) => {
-                console.error('Error al cancelar solicitud:', error);
-            });
+            if (snapshot.exists()) {
+                const users = snapshot.val();
+                for (const userId in users) {
+                    if (users[userId].email === email) {
+                        return userId;
+                    }
+                }
+            }
+            return null;
         }
 
         // Cargar las solicitudes pendientes
