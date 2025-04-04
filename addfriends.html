@@ -43,6 +43,21 @@
             color: red;
             text-align: center;
         }
+        .friendList {
+            margin-top: 20px;
+        }
+        .friendList ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .friendList li {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
@@ -51,6 +66,11 @@
         <input type="email" id="friendEmail" placeholder="Correo electrónico del amigo" required>
         <button id="sendRequestBtn">Enviar Solicitud</button>
         <div class="error" id="error"></div>
+
+        <div class="friendList" id="friendList">
+            <h2>Solicitudes Pendientes</h2>
+            <ul id="requests"></ul>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
@@ -69,7 +89,7 @@
         // Importar los módulos de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+        import { getDatabase, ref, push, update, get, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
@@ -86,7 +106,7 @@
                 return;
             }
 
-            // Aquí debes buscar el UID de tu amigo basado en su correo electrónico
+            // Obtener UID de la persona a la que se le envía la solicitud
             const friendUid = getUidFromEmail(friendEmail);
 
             if (!friendUid) {
@@ -109,14 +129,85 @@
         // Función para obtener el UID de un correo (implementación de ejemplo)
         function getUidFromEmail(email) {
             // Aquí deberías implementar la lógica para obtener el UID de la base de datos
-            // Este es solo un ejemplo que requiere ser implementado según tu estructura de base de datos
             return "UID_DEL_AMIGO"; // Este es un valor de ejemplo
+        }
+
+        // Función para aceptar una solicitud de amistad
+        function acceptFriendRequest(requestId, friendUid) {
+            const user = auth.currentUser;
+
+            // Mover la solicitud a la lista de amigos
+            const friendsRef = ref(database, 'friends/' + user.uid);
+            update(friendsRef, {
+                [friendUid]: true
+            }).then(() => {
+                // Eliminar la solicitud pendiente
+                const requestRef = ref(database, 'friendRequests/' + friendUid + '/' + requestId);
+                update(requestRef, {
+                    status: 'accepted'
+                }).then(() => {
+                    alert('Amistad aceptada.');
+                    loadPendingRequests();  // Recargar solicitudes
+                }).catch((error) => {
+                    console.error('Error al aceptar solicitud:', error);
+                });
+            });
+        }
+
+        // Función para rechazar (cancelar) una solicitud de amistad
+        function cancelFriendRequest(requestId, friendUid) {
+            const user = auth.currentUser;
+
+            // Eliminar la solicitud pendiente
+            const requestRef = ref(database, 'friendRequests/' + friendUid + '/' + requestId);
+            update(requestRef, {
+                status: 'canceled'
+            }).then(() => {
+                alert('Solicitud cancelada.');
+                loadPendingRequests();  // Recargar solicitudes
+            }).catch((error) => {
+                console.error('Error al cancelar solicitud:', error);
+            });
+        }
+
+        // Cargar las solicitudes pendientes
+        function loadPendingRequests() {
+            const user = auth.currentUser;
+            const requestsRef = ref(database, 'friendRequests/' + user.uid);
+
+            get(requestsRef).then((snapshot) => {
+                const requests = snapshot.val();
+                const requestList = document.getElementById('requests');
+                requestList.innerHTML = '';
+
+                for (const requestId in requests) {
+                    const request = requests[requestId];
+                    if (request.status === 'pending') {
+                        const li = document.createElement('li');
+                        li.textContent = `Solicitud de amistad de ${request.from}`;
+                        const acceptBtn = document.createElement('button');
+                        acceptBtn.textContent = 'Aceptar';
+                        acceptBtn.onclick = () => acceptFriendRequest(requestId, request.from);
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.textContent = 'Cancelar';
+                        cancelBtn.onclick = () => cancelFriendRequest(requestId, request.from);
+
+                        li.appendChild(acceptBtn);
+                        li.appendChild(cancelBtn);
+                        requestList.appendChild(li);
+                    }
+                }
+            }).catch((error) => {
+                console.error('Error al cargar las solicitudes:', error);
+            });
         }
 
         // Autenticación forzada
         onAuthStateChanged(auth, user => {
             if (!user) {
                 window.location.href = "login.html";  // Redirigir si no está logueado
+            } else {
+                loadPendingRequests();  // Cargar solicitudes pendientes cuando el usuario esté autenticado
             }
         });
 
