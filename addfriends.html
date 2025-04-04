@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Añadir Amigos - Blocksonline</title>
     <style>
-        body {
+        /* Los estilos siguen igual */
+                body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -75,7 +76,7 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        // Firebase config
+        // Configuración de Firebase
         const firebaseConfig = {
           apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
           authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -88,7 +89,7 @@
 
         // Importar los módulos de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, fetchSignInMethodsForEmail } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import { getDatabase, ref, push, update, get, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
         // Inicializar Firebase
@@ -97,7 +98,7 @@
         const database = getDatabase(app);
 
         // Función para enviar una solicitud de amistad
-        function sendFriendRequest() {
+        async function sendFriendRequest() {
             const user = auth.currentUser;
             const friendEmail = document.getElementById('friendEmail').value.trim();
 
@@ -106,38 +107,30 @@
                 return;
             }
 
-            // Obtener UID de la persona a la que se le envía la solicitud
-            getUidFromEmail(friendEmail).then(friendUid => {
-                if (!friendUid) {
-                    document.getElementById('error').innerText = 'No se encontró ese correo.';
+            try {
+                // Verificar si el correo electrónico existe en Firebase Authentication
+                const methods = await fetchSignInMethodsForEmail(auth, friendEmail);
+
+                if (methods.length === 0) {
+                    document.getElementById('error').innerText = 'No se encontró ese correo. Asegúrate de que esté registrado.';
                     return;
                 }
 
+                // Si el correo existe, obtén el UID asociado
+                const userRecord = await auth.getUserByEmail(friendEmail); // Obtén el UID del correo
+                const friendUid = userRecord.uid;
+
                 // Guardar la solicitud de amistad en la base de datos
                 const requestRef = ref(database, 'friendRequests/' + friendUid);
-                push(requestRef, {
+                await push(requestRef, {
                     from: user.uid,
                     status: 'pending'  // Estado de la solicitud
-                }).then(() => {
-                    alert('Solicitud de amistad enviada.');
-                }).catch((error) => {
-                    document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
                 });
-            });
-        }
 
-        // Función para obtener el UID de un correo
-        function getUidFromEmail(email) {
-            const usersRef = ref(database, 'users/');
-            return get(usersRef).then(snapshot => {
-                const users = snapshot.val();
-                for (const userId in users) {
-                    if (users[userId].email === email) {
-                        return userId;  // Devolver el UID del usuario
-                    }
-                }
-                return null;  // Si no se encuentra el correo
-            });
+                alert('Solicitud de amistad enviada.');
+            } catch (error) {
+                document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
+            }
         }
 
         // Función para aceptar una solicitud de amistad
