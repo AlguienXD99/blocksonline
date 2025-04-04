@@ -107,29 +107,37 @@
             }
 
             // Obtener UID de la persona a la que se le envía la solicitud
-            const friendUid = getUidFromEmail(friendEmail);
+            getUidFromEmail(friendEmail).then(friendUid => {
+                if (!friendUid) {
+                    document.getElementById('error').innerText = 'No se encontró ese correo.';
+                    return;
+                }
 
-            if (!friendUid) {
-                document.getElementById('error').innerText = 'No se encontró ese correo.';
-                return;
-            }
-
-            // Guardar la solicitud de amistad en la base de datos
-            const requestRef = ref(database, 'friendRequests/' + friendUid);
-            push(requestRef, {
-                from: user.uid,
-                status: 'pending'  // Estado de la solicitud
-            }).then(() => {
-                alert('Solicitud de amistad enviada.');
-            }).catch((error) => {
-                document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
+                // Guardar la solicitud de amistad en la base de datos
+                const requestRef = ref(database, 'friendRequests/' + friendUid);
+                push(requestRef, {
+                    from: user.uid,
+                    status: 'pending'  // Estado de la solicitud
+                }).then(() => {
+                    alert('Solicitud de amistad enviada.');
+                }).catch((error) => {
+                    document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
+                });
             });
         }
 
-        // Función para obtener el UID de un correo (implementación de ejemplo)
+        // Función para obtener el UID de un correo
         function getUidFromEmail(email) {
-            // Aquí deberías implementar la lógica para obtener el UID de la base de datos
-            return "UID_DEL_AMIGO"; // Este es un valor de ejemplo
+            const usersRef = ref(database, 'users/');
+            return get(usersRef).then(snapshot => {
+                const users = snapshot.val();
+                for (const userId in users) {
+                    if (users[userId].email === email) {
+                        return userId;  // Devolver el UID del usuario
+                    }
+                }
+                return null;  // Si no se encuentra el correo
+            });
         }
 
         // Función para aceptar una solicitud de amistad
