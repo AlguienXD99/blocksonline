@@ -39,26 +39,36 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Credenciales predefinidas
-    const adminEmail = "unlucky123@blocksonline.net";
-    const adminPassword = "contraseñaSuperSecreta"; // Cámbiala por seguridad
-
-    // Autenticación con contraseña
+    // Autenticación con contraseña desde Firestore
     function login() {
-      const password = document.getElementById("passwordInput").value;
+      const inputPassword = document.getElementById("passwordInput").value;
 
-      if (password === adminPassword) {
-        auth.signInWithEmailAndPassword(adminEmail, adminPassword)
-          .then(() => {
-            document.getElementById("inputSection").style.display = "block"; // Mostrar área de texto
-            displayText(); // Mostrar texto guardado
-          })
-          .catch((error) => {
-            alert("Error en la autenticación: " + error.message);
-          });
-      } else {
-        alert("Contraseña incorrecta.");
-      }
+      // Obtener la contraseña almacenada en Firestore
+      db.collection("admin").doc("config").get().then((doc) => {
+        if (doc.exists) {
+          const storedPassword = doc.data().password; // Obtener la contraseña guardada
+
+          if (inputPassword === storedPassword) {
+            // Iniciar sesión con un usuario admin (debe existir en Firebase Auth)
+            const adminEmail = doc.data().email; // Obtener el correo del admin
+
+            auth.signInWithEmailAndPassword(adminEmail, storedPassword)
+              .then(() => {
+                document.getElementById("inputSection").style.display = "block"; // Mostrar área de texto
+                displayText(); // Mostrar texto guardado
+              })
+              .catch((error) => {
+                alert("Error en la autenticación: " + error.message);
+              });
+          } else {
+            alert("Contraseña incorrecta.");
+          }
+        } else {
+          alert("Error: No se encontró la configuración de admin.");
+        }
+      }).catch((error) => {
+        alert("Error al obtener la contraseña: " + error.message);
+      });
     }
 
     // Guardar texto en Firestore
