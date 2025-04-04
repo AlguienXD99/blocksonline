@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guardar texto en Firestore</title>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <!-- Firebase SDK (Usando versiones UMD en lugar de modulares) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <h2>Ingrese su contraseña</h2>
@@ -34,14 +34,14 @@
       appId: "1:490618182453:web:93385819c7ff08537d8a7c"
     };
 
-    // Inicializar Firebase
+    // Inicializar Firebase con las versiones "compat"
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     // Credenciales predefinidas
     const adminEmail = "unlucky123@blocksonline.net";
-    const adminPassword = "contraseñaSuperSecreta"; // Cambia esto en producción
+    const adminPassword = "contraseñaSuperSecreta"; // Cámbiala por seguridad
 
     // Autenticación con contraseña
     function login() {
