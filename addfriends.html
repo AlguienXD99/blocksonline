@@ -49,7 +49,7 @@
     <div class="container">
         <h1>Añadir Amigos</h1>
         <input type="email" id="friendEmail" placeholder="Correo electrónico del amigo" required>
-        <button onclick="sendFriendRequest()">Enviar Solicitud</button>
+        <button id="sendRequestBtn">Enviar Solicitud</button>
         <div class="error" id="error"></div>
     </div>
 
@@ -119,6 +119,9 @@
                 window.location.href = "login.html";  // Redirigir si no está logueado
             }
         });
+
+        // Asociar el evento de clic al botón
+        document.getElementById('sendRequestBtn').addEventListener('click', sendFriendRequest);
     </script>
 </body>
 </html>
