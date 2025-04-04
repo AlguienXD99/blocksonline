@@ -54,11 +54,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-
-    <script>
+    <script type="module">
         // Firebase config
         const firebaseConfig = {
           apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
@@ -70,10 +66,15 @@
           appId: "1:490618182453:web:93385819c7ff08537d8a7c"
         };
 
+        // Importar los módulos de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
         // Inicializar Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
 
         // Función para enviar una solicitud de amistad
         function sendFriendRequest() {
@@ -94,8 +95,8 @@
             }
 
             // Guardar la solicitud de amistad en la base de datos
-            const requestRef = database.ref('friendRequests/' + friendUid);
-            requestRef.push({
+            const requestRef = ref(database, 'friendRequests/' + friendUid);
+            push(requestRef, {
                 from: user.uid,
                 status: 'pending'  // Estado de la solicitud
             }).then(() => {
@@ -105,15 +106,15 @@
             });
         }
 
-        // Función para obtener el UID de un correo (puedes implementar una búsqueda en tu base de datos)
+        // Función para obtener el UID de un correo (implementación de ejemplo)
         function getUidFromEmail(email) {
             // Aquí deberías implementar la lógica para obtener el UID de la base de datos
             // Este es solo un ejemplo que requiere ser implementado según tu estructura de base de datos
-            return "UID_DEL_AMIGO";
+            return "UID_DEL_AMIGO"; // Este es un valor de ejemplo
         }
 
         // Autenticación forzada
-        auth.onAuthStateChanged(user => {
+        onAuthStateChanged(auth, user => {
             if (!user) {
                 window.location.href = "login.html";  // Redirigir si no está logueado
             }
