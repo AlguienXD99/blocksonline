@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Añadir Amigos - Blocksonline</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Añadir Amigos</h1>
+        <input type="email" id="friendEmail" placeholder="Correo electrónico del amigo" required>
+        <button onclick="sendFriendRequest()">Enviar Solicitud</button>
+        <div class="error" id="error"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+          apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+          authDomain: "virtualblocks-b7a52.firebaseapp.com",
+          databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+          projectId: "virtualblocks-b7a52",
+          storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+          messagingSenderId: "490618182453",
+          appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
+
+        // Inicializar Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Función para enviar una solicitud de amistad
+        function sendFriendRequest() {
+            const user = auth.currentUser;
+            const friendEmail = document.getElementById('friendEmail').value.trim();
+
+            if (!friendEmail) {
+                document.getElementById('error').innerText = 'Por favor, ingrese un correo.';
+                return;
+            }
+
+            // Aquí debes buscar el UID de tu amigo basado en su correo electrónico
+            const friendUid = getUidFromEmail(friendEmail);
+
+            if (!friendUid) {
+                document.getElementById('error').innerText = 'No se encontró ese correo.';
+                return;
+            }
+
+            // Guardar la solicitud de amistad en la base de datos
+            const requestRef = database.ref('friendRequests/' + friendUid);
+            requestRef.push({
+                from: user.uid,
+                status: 'pending'  // Estado de la solicitud
+            }).then(() => {
+                alert('Solicitud de amistad enviada.');
+            }).catch((error) => {
+                document.getElementById('error').innerText = 'Error al enviar la solicitud: ' + error.message;
+            });
+        }
+
+        // Función para obtener el UID de un correo (puedes implementar una búsqueda en tu base de datos)
+        function getUidFromEmail(email) {
+            // Aquí deberías implementar la lógica para obtener el UID de la base de datos
+            // Este es solo un ejemplo que requiere ser implementado según tu estructura de base de datos
+            return "UID_DEL_AMIGO";
+        }
+
+        // Autenticación forzada
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = "login.html";  // Redirigir si no está logueado
+            }
+        });
+    </script>
+</body>
+</html>
