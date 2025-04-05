@@ -114,7 +114,7 @@ async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
         let blocksgold = userData.blocksgold || 0;
 
         // Verificar si el usuario ya tiene el artículo
-        if (inventory.includes(itemName)) {
+        if (inventory.some(item => item.name === itemName)) {
             alert("You already own this item!");
             return;
         }
@@ -127,7 +127,16 @@ async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
 
         // Descontar Blocksgolds y añadir el artículo al inventario
         blocksgold -= itemPrice;
-        inventory.push(itemName);
+
+        // Crear un objeto para el artículo con su nombre, imagen y posición
+        const newItem = {
+            name: itemName,
+            imageUrl: imageUrl,
+            position: itemPosition
+        };
+
+        // Añadir el nuevo artículo al inventario
+        inventory.push(newItem);
 
         // Actualizar en la base de datos
         await update(userRef, { inventory: inventory, blocksgold: blocksgold });
@@ -135,7 +144,7 @@ async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
         alert(`${itemName} has been added to your inventory!`);
     }
 }
-
+        
 // 🔹 Función para equipar un artículo
 async function equipItem(itemName) {
     const user = auth.currentUser;
