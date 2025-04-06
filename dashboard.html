@@ -16,7 +16,7 @@
         // 🔥 Importamos Firebase correctamente como módulo
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+        import { getDatabase, ref, get, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 
         // 🔥 Configuración de Firebase
         const firebaseConfig = {
@@ -67,7 +67,8 @@
             if (user) {
                 const nickname = document.getElementById("nickname").value;
                 const userRef = ref(db, "users/" + user.uid);
-                await set(userRef, { nickname }, { merge: true }); // 🔥 Guardar nickname en la DB
+
+                await update(userRef, { nickname }); // 🔥 Usa update() en lugar de set()
                 alert("Perfil actualizado!");
             }
         }
