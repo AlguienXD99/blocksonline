@@ -61,17 +61,42 @@
             });
         }
 
-        // 🔹 Guardar cambios en el perfil del usuario
-        async function saveProfile() {
-            const user = auth.currentUser;
-            if (user) {
-                const nickname = document.getElementById("nickname").value;
+// 🔹 Guardar cambios en el perfil del usuario
+async function saveProfile() {
+    const user = auth.currentUser;
+    if (user) {
+        const nickname = document.getElementById("nickname").value;
+        
+        // Referencia a las palabras bloqueadas en la base de datos
+        const forbiddenWordsRef = ref(db, "forbiddenWords/blockedWords");
+        
+        // Obtener las palabras bloqueadas
+        const snapshot = await get(forbiddenWordsRef);
+        if (snapshot.exists()) {
+            const blockedWords = Object.keys(snapshot.val());  // Obtiene las claves (palabras bloqueadas)
+            
+            // Verificar si el nickname contiene alguna palabra prohibida
+            let isValid = true;
+            blockedWords.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi'); // Regex para buscar la palabra exacta
+                if (regex.test(nickname)) {
+                    isValid = false;
+                    alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
+                }
+            });
+            
+            // Si el nickname es válido, proceder a guardar
+            if (isValid) {
                 const userRef = ref(db, "users/" + user.uid);
-
-                await update(userRef, { nickname }); // 🔥 Usa update() en lugar de set()
+                await update(userRef, { nickname });
                 alert("Perfil actualizado!");
             }
+        } else {
+            console.log("No se pudieron obtener las palabras bloqueadas.");
         }
+    }
+}
+
 
         // 🔹 Cerrar sesión
         async function logout() {
