@@ -8,6 +8,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         body {
           font-family: Arial;
@@ -45,6 +46,7 @@ const firebaseConfig = {
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
             const db = firebase.firestore();
+            const rtdb = firebase.database();  // Conexión a RTDB
 
             // 🔑 Autenticación con correo y contraseña
             window.login = function() {
@@ -64,15 +66,25 @@ const firebaseConfig = {
                     alert("Sesión cerrada");
                 });
             };
-            // 🔍 Función para filtrar enlaces no permitidos
-            function filterMessage(text) {
-                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                return text.replace(urlRegex, (url) => {
-                    return url.includes("blocksonline.neocities.org") 
-                        ? url 
-                        : "#".repeat(url.length);
+
+            // 📝 Obtener lista de palabras bloqueadas de RTDB
+            let blockedWords = [];
+            const forbiddenWordsRef = rtdb.ref('forbiddenWords/blockedWords');
+            forbiddenWordsRef.once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    blockedWords = Object.keys(snapshot.val());  // Obtener las palabras bloqueadas
+                }
+            });
+
+            // 🔍 Función para verificar si el mensaje contiene palabras bloqueadas o combinaciones
+            function containsBlockedWords(text) {
+                return blockedWords.some(word => {
+                    // Usamos una expresión regular para verificar combinaciones
+                    const regex = new RegExp(`(?:[^a-zA-Z]|^)${word}(?:[^a-zA-Z]|$)`, 'gi');
+                    return regex.test(text);
                 });
             }
+
             // 📨 Enviar mensaje al chat
             window.sendMessage = function() {
                 const message = document.getElementById("message").value;
@@ -83,6 +95,13 @@ const firebaseConfig = {
                     return;
                 }
 
+                // Verificar si el mensaje contiene palabras bloqueadas
+                if (containsBlockedWords(message)) {
+                    alert("Tu mensaje contiene palabras inapropiadas. Por favor, modera tu lenguaje.");
+                    return;  // Detener el envío si el mensaje es inapropiado
+                }
+
+                // Si el mensaje es válido, enviarlo a Firestore
                 db.collection("messages").add({
                     text: message,
                     user: user.email,
