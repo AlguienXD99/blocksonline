@@ -116,46 +116,44 @@
                         return isValid;
                     }
 
-// 📨 Enviar mensaje al chat
-window.sendMessage = function() {
-    const message = document.getElementById("message").value;
-    const user = auth.currentUser;
+                    // 📨 Enviar mensaje al chat
+                    window.sendMessage = function() {
+                        const message = document.getElementById("message").value;
+                        const user = auth.currentUser;
 
-    if (!user) {
-        alert("Inicia sesión para enviar mensajes.");
-        return;
-    }
+                        if (!user) {
+                            alert("Inicia sesión para enviar mensajes.");
+                            return;
+                        }
 
-    // Verificar si el mensaje contiene palabras bloqueadas
-    if (!containsBlockedWords(message)) {
-        return;  // Detener el envío si el mensaje es inapropiado
-    }
+                        // Verificar si el mensaje contiene palabras bloqueadas
+                        if (!containsBlockedWords(message)) {
+                            return;  // Detener el envío si el mensaje es inapropiado
+                        }
 
-    // Guardar mensaje con el UID del usuario en lugar del correo
-    db.collection("messages").add({
-        text: message,
-        userUID: user.uid,  // Guardamos el UID en lugar del email
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-};
+                        // Si el mensaje es válido, enviarlo a Firestore
+                        db.collection("messages").add({
+                            text: message,
+                            user: user.email,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    };
 
-// 📩 Escuchar mensajes en tiempo real y obtener nicknames
-db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
-    const chat = document.getElementById("chat");
-    chat.innerHTML = "";
+                    // 📩 Escuchar mensajes en tiempo real
+                    db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
+                        const chat = document.getElementById("chat");
+                        chat.innerHTML = "";
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            chat.innerHTML += `<p><strong>${data.user}:</strong> ${data.text}</p>`;
+                        });
+                    });
 
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        const userUID = data.userUID;
-
-        // Obtener el nickname desde RTDB
-        rtdb.ref("users/" + userUID + "/nickname").once("value").then(nicknameSnapshot => {
-            const nickname = nicknameSnapshot.exists() ? nicknameSnapshot.val() : "Usuario Desconocido";
-            chat.innerHTML += `<p><strong>${nickname}:</strong> ${data.text}</p>`;
+                } else {
+                    console.log("No se pudieron obtener las palabras bloqueadas.");
+                }
+            });
         });
-    });
-});
-
     </script>
 </body>
 </html>
