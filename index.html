@@ -64,10 +64,11 @@
     </div>
 
     <p>Already have an account? <a href="login.html">Login here</a></p>
+
 <script type="module">
   // Importa Firebase de manera correcta
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
   // Configuración de Firebase
   const firebaseConfig = {
@@ -90,11 +91,17 @@
     const messageBox = document.getElementById('message');
 
     createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
+      .then(async (userCredential) => {
+        const user = userCredential.user;
+
+        // Enviar correo de verificación
+        await sendEmailVerification(user);
+
         messageBox.style.color = "green";
-        messageBox.innerText = "✅ Account created! Redirecting...";
+        messageBox.innerText = "✅ Account created! Please verify your email. Check your inbox for the verification link.";
+        
         setTimeout(() => {
-          window.location.href = "dashboardaccess.html";
+          window.location.href = "login.html";  // Redirige a la página de inicio de sesión
         }, 2000);
       })
       .catch((error) => {
