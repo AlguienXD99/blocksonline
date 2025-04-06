@@ -144,7 +144,7 @@ async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
         alert(`${itemName} has been added to your inventory!`);
     }
 }
-        
+
 // 🔹 Función para equipar un artículo
 async function equipItem(itemName) {
     const user = auth.currentUser;
@@ -155,40 +155,44 @@ async function equipItem(itemName) {
         let inventory = userData.inventory || [];
         let equippedItems = userData.equippedItems || [];
 
-        // Verificar si el usuario posee el artículo
-        if (!inventory.includes(itemName)) {
+        // Verificar si el usuario posee el artículo en el inventario
+        const itemInInventory = inventory.find(item => item.name === itemName);
+        if (!itemInInventory) {
             alert("You must buy this item before equipping it!");
             return;
         }
 
         // Si no está ya equipado, lo equipa
-        if (!equippedItems.includes(itemName)) {
+        if (!equippedItems.some(item => item === itemName)) {
             equippedItems.push(itemName);
             await update(userRef, { equippedItems: equippedItems });
-            alert(itemName + " has been equipped!");
+            alert(`${itemName} has been equipped!`);
         } else {
-            alert(itemName + " is already equipped!");
+            alert(`${itemName} is already equipped!`);
         }
     }
 }
-        // 🔹 Función para desequipar un artículo
-        async function unequipItem(itemName) {
-            const user = auth.currentUser;
-            if (user) {
-                const userRef = ref(db, "users/" + user.uid);
-                const userData = (await get(userRef)).val();
 
-                let equippedItems = userData.equippedItems || [];
-                const itemIndex = equippedItems.indexOf(itemName);
-                if (itemIndex !== -1) {
-                    equippedItems.splice(itemIndex, 1); // Eliminar artículo de los objetos equipados
-                    await update(userRef, { equippedItems: equippedItems });
-                    alert(itemName + " has been unequipped!");
-                } else {
-                    alert(itemName + " is not equipped!");
-                }
-            }
+// 🔹 Función para desequipar un artículo
+async function unequipItem(itemName) {
+    const user = auth.currentUser;
+    if (user) {
+        const userRef = ref(db, "users/" + user.uid);
+        const userData = (await get(userRef)).val();
+
+        let equippedItems = userData.equippedItems || [];
+        const itemIndex = equippedItems.indexOf(itemName);
+        
+        if (itemIndex !== -1) {
+            equippedItems.splice(itemIndex, 1); // Eliminar artículo de los objetos equipados
+            await update(userRef, { equippedItems: equippedItems });
+            alert(`${itemName} has been unequipped!`);
+        } else {
+            alert(`${itemName} is not equipped!`);
         }
+    }
+}
+
         // 🔹 Cerrar sesión
         async function logout() {
             await signOut(auth);
