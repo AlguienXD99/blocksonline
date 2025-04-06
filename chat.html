@@ -54,7 +54,7 @@
                 auth.signOut().then(() => alert("Sesión cerrada"));
             };
 
-            // 🛠 Obtener lista de palabras bloqueadas
+            // Obtener lista de palabras bloqueadas
             let blockedWords = [];
             rtdb.ref('forbiddenWords/blockedWords').once('value').then(snapshot => {
                 if (snapshot.exists()) {
@@ -62,19 +62,30 @@
                 }
             });
 
-            // 🔍 Validar mensaje antes de enviarlo
             function containsBlockedWords(text) {
                 for (let word of blockedWords) {
-                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    const regex = new RegExp(`\b${word}\b`, 'gi');
                     if (regex.test(text)) {
                         alert("Tu mensaje contiene palabras prohibidas.");
                         return true;
                     }
                 }
+                
+                // Verificar combinaciones de palabras prohibidas
+                for (let i = 0; i < blockedWords.length; i++) {
+                    for (let j = i + 1; j < blockedWords.length; j++) {
+                        let combinedWord = blockedWords[i] + blockedWords[j];
+                        let combinedRegex = new RegExp(combinedWord, 'gi');
+                        if (combinedRegex.test(text)) {
+                            alert("Tu mensaje contiene combinaciones de palabras prohibidas.");
+                            return true;
+                        }
+                    }
+                }
+                
                 return false;
             }
 
-            // 📩 Enviar mensaje
             window.sendMessage = function() {
                 const messageInput = document.getElementById("message");
                 const message = messageInput.value.trim();
@@ -99,11 +110,10 @@
                     userUID: user.uid,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
-                    messageInput.value = ""; // 🧹 Limpiar input después de enviar
+                    messageInput.value = "";
                 });
             };
 
-            // 📝 Mostrar mensajes en tiempo real
             db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
                 const chat = document.getElementById("chat");
                 chat.innerHTML = "";
@@ -115,7 +125,6 @@
                     messages.push({ id: doc.id, text: data.text, userUID: data.userUID });
                 });
 
-                // Cargar nicknames y mostrar mensajes
                 let promises = messages.map(msg =>
                     rtdb.ref("users/" + msg.userUID + "/nickname").once("value").then(nicknameSnapshot => {
                         const nickname = nicknameSnapshot.exists() ? nicknameSnapshot.val() : "Usuario Desconocido";
@@ -124,7 +133,7 @@
                 );
 
                 Promise.all(promises).then(renderedMessages => {
-                    chat.innerHTML = renderedMessages.join(""); // Renderizar todos los mensajes de una vez
+                    chat.innerHTML = renderedMessages.join("");
                 });
             });
         });
