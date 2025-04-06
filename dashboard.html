@@ -61,7 +61,6 @@
             });
         }
 
-// 🔹 Guardar cambios en el perfil del usuario
 async function saveProfile() {
     const user = auth.currentUser;
     if (user) {
@@ -75,10 +74,21 @@ async function saveProfile() {
         if (snapshot.exists()) {
             const blockedWords = Object.keys(snapshot.val());  // Obtiene las claves (palabras bloqueadas)
             
-            // Verificar si el nickname contiene alguna palabra prohibida
-            let isValid = true;
+            // Crear un array de fragmentos
+            let fragments = [];
             blockedWords.forEach(word => {
-                const regex = new RegExp(`\\b${word}\\b`, 'gi'); // Regex para buscar la palabra exacta
+                for (let i = 1; i <= word.length; i++) {
+                    // Dividir la palabra en fragmentos de tamaños más pequeños
+                    for (let j = 0; j < word.length - i + 1; j++) {
+                        fragments.push(word.slice(j, j + i)); // Fragmentos de tamaño variable
+                    }
+                }
+            });
+            
+            // Verificar si alguna combinación de fragmentos está presente en el nickname
+            let isValid = true;
+            fragments.forEach(fragment => {
+                const regex = new RegExp(`\\b${fragment}\\b`, 'gi'); // Regex para buscar fragmentos
                 if (regex.test(nickname)) {
                     isValid = false;
                     alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
@@ -96,7 +106,6 @@ async function saveProfile() {
         }
     }
 }
-
 
         // 🔹 Cerrar sesión
         async function logout() {
