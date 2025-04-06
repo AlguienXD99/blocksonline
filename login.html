@@ -11,7 +11,7 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
@@ -32,11 +32,15 @@
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                // Verifica si el usuario ha confirmado su email
+                // Verificar si el correo está verificado
                 if (user.emailVerified) {
+                    // Si el correo está verificado, redirigir al dashboard
                     window.location.href = "dashboard.html";
                 } else {
+                    // Si no está verificado, cerrar sesión y mostrar alerta
+                    await signOut(auth);
                     alert("Por favor, verifica tu correo electrónico antes de iniciar sesión.");
+                    window.location.href = "verify-email.html"; // Redirigir a página de verificación de correo
                 }
             } catch (error) {
                 alert("Error: " + error.message);
@@ -54,7 +58,7 @@
                 await sendEmailVerification(user);
                 
                 alert("Registro exitoso! Te hemos enviado un correo para que verifiques tu dirección de email.");
-                window.location.href = "login.html";  // Puedes redirigir a una página de login después del registro
+                window.location.href = "login.html";  // Redirigir a login después de registro
             } catch (error) {
                 alert("Error: " + error.message);
             }
