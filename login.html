@@ -11,7 +11,7 @@
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
@@ -29,8 +29,15 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-                window.location.href = "dashboard.html";
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Verifica si el usuario ha confirmado su email
+                if (user.emailVerified) {
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert("Por favor, verifica tu correo electrónico antes de iniciar sesión.");
+                }
             } catch (error) {
                 alert("Error: " + error.message);
             }
@@ -40,8 +47,14 @@
             const email = document.getElementById("email").value;
             const password = document.getElementById("password").value;
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                window.location.href = "dashboard.html";
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Enviar correo de verificación
+                await sendEmailVerification(user);
+                
+                alert("Registro exitoso! Te hemos enviado un correo para que verifiques tu dirección de email.");
+                window.location.href = "login.html";  // Puedes redirigir a una página de login después del registro
             } catch (error) {
                 alert("Error: " + error.message);
             }
