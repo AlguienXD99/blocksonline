@@ -74,21 +74,22 @@ async function saveProfile() {
         if (snapshot.exists()) {
             const blockedWords = Object.keys(snapshot.val());  // Obtiene las claves (palabras bloqueadas)
             
-            // Crear un array de fragmentos
-            let fragments = [];
-            blockedWords.forEach(word => {
-                for (let i = 1; i <= word.length; i++) {
-                    // Dividir la palabra en fragmentos de tamaños más pequeños
-                    for (let j = 0; j < word.length - i + 1; j++) {
-                        fragments.push(word.slice(j, j + i)); // Fragmentos de tamaño variable
+            // Crear todas las combinaciones posibles de las palabras bloqueadas
+            let combinations = [];
+
+            // Generar combinaciones de todas las palabras bloqueadas
+            for (let i = 0; i < blockedWords.length; i++) {
+                for (let j = 0; j < blockedWords.length; j++) {
+                    if (i !== j) {
+                        combinations.push(blockedWords[i] + blockedWords[j]); // Combinación de dos palabras
                     }
                 }
-            });
+            }
             
-            // Verificar si alguna combinación de fragmentos está presente en el nickname
+            // Verificar si alguna de las combinaciones está presente en el nickname
             let isValid = true;
-            fragments.forEach(fragment => {
-                const regex = new RegExp(`\\b${fragment}\\b`, 'gi'); // Regex para buscar fragmentos
+            combinations.forEach(combination => {
+                const regex = new RegExp(combination, 'gi'); // Regex para buscar combinaciones
                 if (regex.test(nickname)) {
                     isValid = false;
                     alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
