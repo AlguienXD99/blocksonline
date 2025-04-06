@@ -66,18 +66,17 @@ async function saveProfile() {
     if (user) {
         const nickname = document.getElementById("nickname").value;
         
-        // Referencia a las palabras bloqueadas en la base de datos
+        // Referencia a las palabras bloqueadas y sus excepciones en la base de datos
         const forbiddenWordsRef = ref(db, "forbiddenWords/blockedWords");
         
         // Obtener las palabras bloqueadas
         const snapshot = await get(forbiddenWordsRef);
         if (snapshot.exists()) {
-            const blockedWords = Object.keys(snapshot.val());  // Obtiene las claves (palabras bloqueadas)
+            const blockedWordsData = snapshot.val();  // Obtenemos los datos completos
+            const blockedWords = Object.keys(blockedWordsData);  // Solo las claves (palabras bloqueadas)
             
             // Crear todas las combinaciones posibles de las palabras bloqueadas
             let combinations = [];
-
-            // Generar combinaciones de todas las palabras bloqueadas
             for (let i = 0; i < blockedWords.length; i++) {
                 for (let j = 0; j < blockedWords.length; j++) {
                     if (i !== j) {
@@ -86,13 +85,28 @@ async function saveProfile() {
                 }
             }
             
-            // Verificar si alguna de las combinaciones está presente en el nickname
+            // Verificar si alguna palabra o combinación está en el nickname
             let isValid = true;
             combinations.forEach(combination => {
                 const regex = new RegExp(combination, 'gi'); // Regex para buscar combinaciones
                 if (regex.test(nickname)) {
-                    isValid = false;
-                    alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
+                    // Verificar si está en las excepciones
+                    if (!blockedWordsData[combination] || blockedWordsData[combination] !== false) {
+                        isValid = false;
+                        alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
+                    }
+                }
+            });
+
+            // Verificar las palabras exactas
+            blockedWords.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi'); // Regex para buscar la palabra exacta
+                if (regex.test(nickname)) {
+                    // Verificar si está en las excepciones
+                    if (!blockedWordsData[word] || blockedWordsData[word] !== false) {
+                        isValid = false;
+                        alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
+                    }
                 }
             });
             
