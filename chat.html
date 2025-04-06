@@ -4,34 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat con Firebase</title>
-    <!-- 🚀 Incluir Firebase desde un CDN -->
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
-        body {
-            font-family: Arial;
-        }
+        body { font-family: Arial, sans-serif; }
     </style>
 </head>
 <body>
     <h2>Chat 💬</h2>
-    
+
     <input type="email" id="email" placeholder="Correo">
     <input type="password" id="password" placeholder="Contraseña">
     <button onclick="login()">Iniciar sesión</button>
     <button onclick="logout()">Cerrar sesión</button>
 
     <div id="chat"></div>
-    
+
     <input type="text" id="message" placeholder="Escribe un mensaje">
     <button onclick="sendMessage()">Enviar</button>
 
-    <!-- 🛠 Script del chat -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // 🔥 Configuración de Firebase
             const firebaseConfig = {
                 apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
                 authDomain: "virtualblocks-b7a52.firebaseapp.com",
@@ -42,123 +37,95 @@
                 appId: "1:490618182453:web:93385819c7ff08537d8a7c"
             };
 
-            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
             const auth = firebase.auth();
             const db = firebase.firestore();
-            const rtdb = firebase.database();  // Conexión a RTDB
+            const rtdb = firebase.database();
 
-            // 🔑 Autenticación con correo y contraseña
             window.login = function() {
                 const email = document.getElementById("email").value;
                 const password = document.getElementById("password").value;
                 auth.signInWithEmailAndPassword(email, password)
-                    .then(userCredential => {
-                        alert("Inicio de sesión exitoso");
-                    })
-                    .catch(error => {
-                        alert("Error: " + error.message);
-                    });
+                    .then(() => alert("Inicio de sesión exitoso"))
+                    .catch(error => alert("Error: " + error.message));
             };
 
             window.logout = function() {
-                auth.signOut().then(() => {
-                    alert("Sesión cerrada");
+                auth.signOut().then(() => alert("Sesión cerrada"));
+            };
+
+            // 🛠 Obtener lista de palabras bloqueadas
+            let blockedWords = [];
+            rtdb.ref('forbiddenWords/blockedWords').once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    blockedWords = Object.keys(snapshot.val());
+                }
+            });
+
+            // 🔍 Validar mensaje antes de enviarlo
+            function containsBlockedWords(text) {
+                for (let word of blockedWords) {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    if (regex.test(text)) {
+                        alert("Tu mensaje contiene palabras prohibidas.");
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // 📩 Enviar mensaje
+            window.sendMessage = function() {
+                const messageInput = document.getElementById("message");
+                const message = messageInput.value.trim();
+                const user = auth.currentUser;
+
+                if (!user) {
+                    alert("Inicia sesión para enviar mensajes.");
+                    return;
+                }
+
+                if (message === "") {
+                    alert("No puedes enviar un mensaje vacío.");
+                    return;
+                }
+
+                if (containsBlockedWords(message)) {
+                    return;
+                }
+
+                db.collection("messages").add({
+                    text: message,
+                    userUID: user.uid,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    messageInput.value = ""; // 🧹 Limpiar input después de enviar
                 });
             };
 
-            // 📝 Obtener lista de palabras bloqueadas y sus excepciones desde RTDB
-            let blockedWords = [];
-            const forbiddenWordsRef = rtdb.ref('forbiddenWords/blockedWords');
-            forbiddenWordsRef.once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    const blockedWordsData = snapshot.val();  // Obtener las palabras bloqueadas
-                    blockedWords = Object.keys(blockedWordsData);  // Solo las claves (palabras bloqueadas)
+            // 📝 Mostrar mensajes en tiempo real
+            db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
+                const chat = document.getElementById("chat");
+                chat.innerHTML = "";
 
-                    // Crear todas las combinaciones posibles de las palabras bloqueadas
-                    let combinations = [];
-                    for (let i = 0; i < blockedWords.length; i++) {
-                        for (let j = 0; j < blockedWords.length; j++) {
-                            if (i !== j) {
-                                combinations.push(blockedWords[i] + blockedWords[j]); // Combinación de dos palabras
-                            }
-                        }
-                    }
+                let messages = [];
 
-                    // 🔍 Función para verificar si el mensaje contiene palabras bloqueadas o combinaciones
-                    function containsBlockedWords(text) {
-                        let isValid = true;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    messages.push({ id: doc.id, text: data.text, userUID: data.userUID });
+                });
 
-                        // Verificar combinaciones
-                        combinations.forEach(combination => {
-                            const regex = new RegExp(combination, 'gi'); // Regex para buscar combinaciones
-                            if (regex.test(text)) {
-                                const isException = blockedWordsData[combination] && blockedWordsData[combination] !== false;
-                                if (!isException) {
-                                    isValid = false;
-                                    alert("Tu mensaje contiene palabras inapropiadas. Por favor, modera tu lenguaje.");
-                                }
-                            }
-                        });
+                // Cargar nicknames y mostrar mensajes
+                let promises = messages.map(msg =>
+                    rtdb.ref("users/" + msg.userUID + "/nickname").once("value").then(nicknameSnapshot => {
+                        const nickname = nicknameSnapshot.exists() ? nicknameSnapshot.val() : "Usuario Desconocido";
+                        return `<p><strong>${nickname}:</strong> ${msg.text}</p>`;
+                    })
+                );
 
-                        // Verificar las palabras exactas
-                        blockedWords.forEach(word => {
-                            const regex = new RegExp(`\\b${word}\\b`, 'gi'); // Regex para buscar la palabra exacta
-                            if (regex.test(text)) {
-                                const isException = blockedWordsData[word] && blockedWordsData[word] !== false;
-                                if (!isException) {
-                                    isValid = false;
-                                    alert("Tu mensaje contiene palabras inapropiadas. Por favor, modera tu lenguaje.");
-                                }
-                            }
-                        });
-
-                        return isValid;
-                    }
-
-// 📨 Enviar mensaje al chat
-window.sendMessage = function() {
-    const message = document.getElementById("message").value;
-    const user = auth.currentUser;
-
-    if (!user) {
-        alert("Inicia sesión para enviar mensajes.");
-        return;
-    }
-
-    // Verificar si el mensaje contiene palabras bloqueadas
-    if (!containsBlockedWords(message)) {
-        return;  // Detener el envío si el mensaje es inapropiado
-    }
-
-    // Guardar mensaje con el UID del usuario en lugar del correo
-    db.collection("messages").add({
-        text: message,
-        userUID: user.uid,  // Guardamos el UID en lugar del email
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-};
-
-// 📩 Escuchar mensajes en tiempo real y obtener nicknames
-db.collection("messages").orderBy("timestamp").onSnapshot(snapshot => {
-    const chat = document.getElementById("chat");
-    chat.innerHTML = "";
-
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        const userUID = data.userUID;
-
-        // Obtener el nickname desde RTDB
-        rtdb.ref("users/" + userUID + "/nickname").once("value").then(nicknameSnapshot => {
-            const nickname = nicknameSnapshot.exists() ? nicknameSnapshot.val() : "Usuario Desconocido";
-            chat.innerHTML += `<p><strong>${nickname}:</strong> ${data.text}</p>`;
-        });
-    });
-});
-
-                } else {
-                    console.log("No se pudieron obtener las palabras bloqueadas.");
-                }
+                Promise.all(promises).then(renderedMessages => {
+                    chat.innerHTML = renderedMessages.join(""); // Renderizar todos los mensajes de una vez
+                });
             });
         });
     </script>
