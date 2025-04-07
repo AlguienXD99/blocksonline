@@ -153,7 +153,7 @@ async function equipItem(itemName) {
         const userData = (await get(userRef)).val();
 
         let inventory = userData.inventory || [];
-        let equippedItems = userData.equippedItems || [];
+        let equippedItems = userData.equippedItems || {};
 
         // Verificar si el usuario posee el artículo en el inventario
         const itemInInventory = inventory.find(item => item.name === itemName);
@@ -163,8 +163,15 @@ async function equipItem(itemName) {
         }
 
         // Si no está ya equipado, lo equipa
-        if (!equippedItems.some(item => item === itemName)) {
-            equippedItems.push(itemName);
+        if (!equippedItems[itemName]) {
+            // Guardar el artículo completo con todas sus propiedades en equippedItems
+            equippedItems[itemName] = {
+                imageUrl: itemInInventory.imageUrl,
+                position: itemInInventory.position,
+                // Puedes agregar más propiedades aquí si es necesario
+            };
+
+            // Actualizar los items equipados en la base de datos
             await update(userRef, { equippedItems: equippedItems });
             alert(`${itemName} has been equipped!`);
         } else {
@@ -172,6 +179,7 @@ async function equipItem(itemName) {
         }
     }
 }
+
 
 // 🔹 Función para desequipar un artículo
 async function unequipItem(itemName) {
