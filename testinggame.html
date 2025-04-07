@@ -138,23 +138,57 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.05;
     player.y += (targetY - player.y) * 0.05;
 
-    for (const id in players) {
-        const p = players[id];
+ for (const id in players) {
+    const p = players[id];
 
-        // Dibujar jugador
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+    // Dibujar jugador
+    ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+    // Dibujar nombre y vida
+    ctx.fillStyle = "black";
+    ctx.font = "14px Arial";
+    ctx.fillText(p.name, p.x - 20, p.y - 30);
+    ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-        // Dibujar espada si la tiene equipada
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-        }
+    // Dibujar items equipados
+    if (p.equippedItems) {
+        p.equippedItems.forEach(item => {
+            const imageUrl = item.imageUrl;
+            const itemPosition = item.position;
+
+            // Obtén la imagen del ítem
+            const itemImg = new Image();
+            itemImg.src = imageUrl;
+
+            // Dependiendo de la posición del ítem, lo dibujamos en el lugar adecuado
+            itemImg.onload = () => {
+                switch (itemPosition) {
+                    case "head":
+                        ctx.drawImage(itemImg, p.x - 25, p.y - 50, 50, 50);  // Coloca el ítem en la cabeza
+                        break;
+                    case "torso":
+                        ctx.drawImage(itemImg, p.x - 25, p.y, 50, 50);  // Coloca el ítem en el torso
+                        break;
+                    case "legs":
+                        ctx.drawImage(itemImg, p.x - 25, p.y + 25, 50, 50);  // Coloca el ítem en las piernas
+                        break;
+                    case "weapon":
+                        ctx.drawImage(itemImg, p.x + 15, p.y, 40, 40);  // Coloca el ítem como arma
+                        break;
+                    // Agrega más posiciones si es necesario
+                    default:
+                        console.log(`Posición de item desconocida: ${itemPosition}`);
+                }
+            };
+        });
     }
+
+    // Dibujar espada si la tiene equipada
+    if (p.hasSword) {
+        ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+    }
+}
+
 
     // Mostrar errores de Firebase en el canvas
     if (firebaseError) {
