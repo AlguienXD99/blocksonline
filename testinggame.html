@@ -150,8 +150,8 @@ for (const id in players) {
     ctx.fillText(p.name, p.x - 20, p.y - 30);
     ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-for (const id in users) {  // Cambiamos 'players' a 'users'
-    const p = users[id];  // Accedemos al usuario en lugar del jugador
+for (const id in players) {
+    const p = players[id];
 
     // Dibujar jugador
     ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
@@ -201,7 +201,6 @@ for (const id in users) {  // Cambiamos 'players' a 'users'
         ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
     }
 }
-
     // Mostrar errores de Firebase en el canvas
     if (firebaseError) {
         ctx.fillStyle = "red";
