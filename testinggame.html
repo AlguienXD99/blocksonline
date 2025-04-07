@@ -150,18 +150,29 @@ function gameLoop() {
     ctx.fillText(p.name, p.x - 20, p.y - 30);
     ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-    // Dibujar items equipados
-    if (p.equippedItems) {
-        p.equippedItems.forEach(item => {
+// Obtener el UID del usuario autenticado
+const userUid = firebase.auth().currentUser.uid;
+
+// Obtener la referencia de la base de datos de los datos del jugador
+const userRef = firebase.database().ref('users/' + userUid);
+
+// Obtener los datos del jugador desde la base de datos
+userRef.once('value', (snapshot) => {
+    const userData = snapshot.val();
+
+    // Asegúrate de que los datos del jugador estén disponibles y de que tenga items equipados
+    if (userData && userData.equippedItems) {
+        userData.equippedItems.forEach(item => {
             const imageUrl = item.imageUrl;
             const itemPosition = item.position;
 
-            // Obtén la imagen del ítem
+            // Crear la imagen del ítem
             const itemImg = new Image();
             itemImg.src = imageUrl;
 
-            // Dependiendo de la posición del ítem, lo dibujamos en el lugar adecuado
+            // Dibujar el ítem cuando la imagen se haya cargado
             itemImg.onload = () => {
+                // Determinar la posición del ítem y dibujarlo en el canvas
                 switch (itemPosition) {
                     case "head":
                         ctx.drawImage(itemImg, p.x - 25, p.y - 50, 50, 50);  // Coloca el ítem en la cabeza
@@ -175,7 +186,6 @@ function gameLoop() {
                     case "weapon":
                         ctx.drawImage(itemImg, p.x + 15, p.y, 40, 40);  // Coloca el ítem como arma
                         break;
-                    // Agrega más posiciones si es necesario
                     default:
                         console.log(`Posición de item desconocida: ${itemPosition}`);
                 }
@@ -183,12 +193,11 @@ function gameLoop() {
         });
     }
 
-    // Dibujar espada si la tiene equipada
-    if (p.hasSword) {
+    // Si el jugador tiene una espada equipada, dibujarla
+    if (userData.hasSword) {
         ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
     }
-}
-
+});
 
     // Mostrar errores de Firebase en el canvas
     if (firebaseError) {
