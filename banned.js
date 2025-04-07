@@ -1,12 +1,10 @@
-// Importa Firebase SDK
+// Importa las referencias necesarias de Firebase
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// Aquí no necesitamos la configuración ni la inicialización de Firebase, ya que se asume que Firebase ya fue inicializado en otro archivo
-
-// Obtén la instancia de Firebase (asegurándonos de que está disponible globalmente)
-const db = getDatabase();  // Usa la base de datos globalmente disponible
-const auth = getAuth();    // Usa la autenticación globalmente disponible
+// Asegúrate de que Firebase ya esté inicializado en otro archivo antes de usar esto
+const auth = getAuth(); // Obtiene la instancia de auth ya inicializada
+const db = getDatabase(); // Obtiene la instancia de db ya inicializada
 
 // Verifica el estado de autenticación
 onAuthStateChanged(auth, (user) => {
