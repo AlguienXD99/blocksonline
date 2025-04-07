@@ -120,12 +120,12 @@ auth.onAuthStateChanged(user => {
         player.id = user.uid;
         
         // Obtenemos el nickname desde Firebase
-        db.ref(users/${user.uid}/nickname).once("value", snapshot => {
+     db.ref(`users/${user.uid}/nickname`).once("value", snapshot => {
             const nickname = snapshot.val() || "Anónimo"; // Si no hay nickname, usamos "Anónimo"
             player.name = nickname;
 
             // Guardamos el jugador en la base de datos
-            db.ref(players/${player.id}).set(player).catch(error => {
+     db.ref(`players/${player.id}`).set(player).catch(error => {
                 firebaseError = error.message; // Captura errores de autenticación
             });
         });
