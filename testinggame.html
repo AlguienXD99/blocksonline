@@ -138,19 +138,7 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.05;
     player.y += (targetY - player.y) * 0.05;
 
-for (const id in players) {
-    const p = players[id];
-
-    // Dibujar jugador
-    ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-
-    // Dibujar nombre y vida
-    ctx.fillStyle = "black";
-    ctx.font = "14px Arial";
-    ctx.fillText(p.name, p.x - 20, p.y - 30);
-    ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-for (const id in players) {
+ for (const id in players) {
     const p = players[id];
 
     // Dibujar jugador
@@ -164,8 +152,7 @@ for (const id in players) {
 
     // Dibujar items equipados
     if (p.equippedItems) {
-        for (const itemKey in p.equippedItems) {  // Recorremos cada ítem
-            const item = p.equippedItems[itemKey];  // Obtenemos el objeto del ítem
+        p.equippedItems.forEach(item => {
             const imageUrl = item.imageUrl;
             const itemPosition = item.position;
 
@@ -193,7 +180,7 @@ for (const id in players) {
                         console.log(`Posición de item desconocida: ${itemPosition}`);
                 }
             };
-        }
+        });
     }
 
     // Dibujar espada si la tiene equipada
@@ -201,6 +188,8 @@ for (const id in players) {
         ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
     }
 }
+
+
     // Mostrar errores de Firebase en el canvas
     if (firebaseError) {
         ctx.fillStyle = "red";
