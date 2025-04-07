@@ -180,7 +180,6 @@ async function equipItem(itemName) {
     }
 }
 
-
 // 🔹 Función para desequipar un artículo
 async function unequipItem(itemName) {
     const user = auth.currentUser;
@@ -188,12 +187,14 @@ async function unequipItem(itemName) {
         const userRef = ref(db, "users/" + user.uid);
         const userData = (await get(userRef)).val();
 
-        let equippedItems = userData.equippedItems || [];
-        const itemIndex = equippedItems.indexOf(itemName);
-        
-        if (itemIndex !== -1) {
-            equippedItems.splice(itemIndex, 1); // Eliminar artículo de los objetos equipados
+        let equippedItems = userData.equippedItems || {};  // Asegurarnos de que es un objeto vacío si no existe
+        if (equippedItems[itemName]) {
+            // Eliminar artículo de los objetos equipados
+            delete equippedItems[itemName]; 
+
+            // Actualizar la base de datos con los artículos equipados restantes
             await update(userRef, { equippedItems: equippedItems });
+
             alert(`${itemName} has been unequipped!`);
         } else {
             alert(`${itemName} is not equipped!`);
