@@ -35,117 +35,121 @@
     <!-- Foro -->
     <div id="forum"></div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-                authDomain: "virtualblocks-b7a52.firebaseapp.com",
-                projectId: "virtualblocks-b7a52",
-                storageBucket: "virtualblocks-b7a52.appspot.com",
-                messagingSenderId: "490618182453",
-                appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-            };
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.appspot.com",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
 
-            firebase.initializeApp(firebaseConfig);
-            const auth = firebase.auth();
-            const db = firebase.firestore();
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-            window.login = function() {
-                const email = document.getElementById("email").value;
-                const password = document.getElementById("password").value;
-                auth.signInWithEmailAndPassword(email, password)
-                    .then(() => alert("Inicio de sesión exitoso"))
-                    .catch(error => alert("Error: " + error.message));
-            };
+        window.login = function() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => alert("Inicio de sesión exitoso"))
+                .catch(error => alert("Error: " + error.message));
+        };
 
-            window.logout = function() {
-                auth.signOut().then(() => alert("Sesión cerrada"));
-            };
+        window.logout = function() {
+            auth.signOut().then(() => alert("Sesión cerrada"));
+        };
 
-            function filterText(text) {
-                const urlRegex = /(https?:\/\/[^\s]+)/g;
-                return text.replace(urlRegex, url => url.includes("blocksonline.neocities.org") ? url : "[Enlace bloqueado]");
+        function filterText(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, url => url.includes("blocksonline.neocities.org") ? url : "[Enlace bloqueado]");
+        }
+
+        window.createPost = async function() {
+            const subject = document.getElementById("subject").value.trim();
+            const title = document.getElementById("title").value.trim();
+            const content = document.getElementById("content").value.trim();
+            const user = auth.currentUser;
+
+            if (!user) {
+                alert("Debes iniciar sesión para publicar.");
+                return;
             }
 
-            window.createPost = async function() {
-                const subject = document.getElementById("subject").value.trim();
-                const title = document.getElementById("title").value.trim();
-                const content = document.getElementById("content").value.trim();
-                const user = auth.currentUser;
+            if (!subject || !title || !content) {
+                alert("Todos los campos son obligatorios.");
+                return;
+            }
 
-                if (!user) {
-                    alert("Debes iniciar sesión para publicar.");
-                    return;
+            if (title.length > 100 || content.length > 500) {
+                alert("El título debe tener menos de 100 caracteres y el contenido menos de 500.");
+                return;
+            }
+
+            // Verificar si el contenido contiene palabras prohibidas
+            const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
+            const snapshot = await forbiddenWordsRef.once("value");
+            const blockedWords = snapshot.val();
+            const blockedWordsArray = Object.keys(blockedWords);
+
+            let isValidContent = true;
+            blockedWordsArray.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                if (regex.test(content)) {
+                    isValidContent = false;
+                    alert("Tu publicación contiene palabras inapropiadas. Por favor, edítala.");
                 }
-
-                if (!subject || !title || !content) {
-                    alert("Todos los campos son obligatorios.");
-                    return;
-                }
-
-                if (title.length > 100 || content.length > 500) {
-                    alert("El título debe tener menos de 100 caracteres y el contenido menos de 500.");
-                    return;
-                }
-
-                // Verificar si el contenido contiene palabras prohibidas
-                const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
-                const snapshot = await forbiddenWordsRef.once("value");
-                const blockedWords = snapshot.val();
-                const blockedWordsArray = Object.keys(blockedWords);
-
-                let isValidContent = true;
-                blockedWordsArray.forEach(word => {
-                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
-                    if (regex.test(content)) {
-                        isValidContent = false;
-                        alert("Tu publicación contiene palabras inapropiadas. Por favor, edítala.");
-                    }
-                });
-
-                if (!isValidContent) return;
-
-                // Guardar la publicación
-                db.collection("posts").add({
-                    subject: filterText(subject),
-                    title: filterText(title),
-                    content: filterText(content),
-                    user: user.uid,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    document.getElementById("subject").value = "";
-                    document.getElementById("title").value = "";
-                    document.getElementById("content").value = "";
-                });
-            };
-
-            // Consulta de publicaciones ordenadas por fecha (más recientes primero)
-            db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
-                const forum = document.getElementById("forum");
-                forum.innerHTML = "";  // Limpiar contenido actual
-                snapshot.forEach(async doc => {
-                    const data = doc.data();
-                    const date = data.timestamp?.toDate() || new Date();
-
-                    // Obtener el nickname del usuario desde la base de datos
-                    const userRef = firebase.database().ref("users/" + data.user);
-                    const userSnapshot = await userRef.once("value");
-                    const userData = userSnapshot.val();
-                    const userNickname = userData ? userData.nickname : "Usuario desconocido";
-
-                    forum.innerHTML += `
-                        <div class="post">
-                            <strong>${userNickname}</strong><br>
-                            <strong>Asunto:</strong> ${data.subject}<br>
-                            <strong>Título:</strong> ${data.title}<br>
-                            <p>${data.content}</p>
-                            <div class="timestamp">${date.toLocaleString()}</div>
-                        </div>
-                    `;
-                });
             });
-        });
-    </script>
 
+            if (!isValidContent) return;
+
+            // Guardar la publicación
+            db.collection("posts").add({
+                subject: filterText(subject),
+                title: filterText(title),
+                content: filterText(content),
+                user: user.uid,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                document.getElementById("subject").value = "";
+                document.getElementById("title").value = "";
+                document.getElementById("content").value = "";
+            });
+        };
+
+        // Consulta de publicaciones ordenadas por fecha (más recientes primero)
+        db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
+            const forum = document.getElementById("forum");
+
+            // Limpiar contenido solo si es necesario
+            const postsArray = [];
+            snapshot.forEach(async doc => {
+                const data = doc.data();
+                const date = data.timestamp?.toDate() || new Date();
+
+                // Obtener el nickname del usuario desde la base de datos
+                const userRef = firebase.database().ref("users/" + data.user);
+                const userSnapshot = await userRef.once("value");
+                const userData = userSnapshot.val();
+                const userNickname = userData ? userData.nickname : "Usuario desconocido";
+
+                postsArray.push(`
+                    <div class="post">
+                        <strong>${userNickname}</strong><br>
+                        <strong>Asunto:</strong> ${data.subject}<br>
+                        <strong>Título:</strong> ${data.title}<br>
+                        <p>${data.content}</p>
+                        <div class="timestamp">${date.toLocaleString()}</div>
+                    </div>
+                `);
+            });
+
+            // Agregar los nuevos posts al foro
+            forum.innerHTML = postsArray.join('');
+        });
+    });
+</script>
 </body>
 </html>
