@@ -31,9 +31,9 @@
             top: 500px;
             cursor: pointer;
         }
-    canvas:hover {
-        cursor: url('cursor.png'), auto;
-     }
+        canvas:hover {
+            cursor: url('cursor.png'), auto;
+        }
     </style>
 </head>
 <body>
@@ -56,7 +56,6 @@
     background-size: cover; /* Ajusta la imagen para cubrir todo el contenedor */
     background-position: center; /* Centra la imagen */
 }
-
 </style>
 
 <div id="leaderboard">Leaderboard</div>
@@ -83,21 +82,48 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 const canvas = document.getElementById("gameCanvas");
-    
+const ctx = canvas.getContext("2d");
+
+let firebaseError = ""; // Variable para almacenar el error
+
 // Cargar la imagen de fondo
 const backgroundImg = new Image();
 backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta correcta
-backgroundImg.onload = () => {
-    gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
-};
-let firebaseError = ""; // Variable para almacenar el error
 
+// Cargar imágenes
+const playerImg = new Image();
+playerImg.src = "player.png"; // Imagen del jugador
+const swordImg = new Image();
+swordImg.src = "https://tr.rbxcdn.com/463a028944c35811cdcd881b3a3a444b/420/420/Decal/Png"; // Imagen de la espada
+
+// Jugador local
+let player = { 
+    id: null, 
+    x: Math.random() * canvas.width, 
+    y: Math.random() * canvas.height, 
+    size: 50, 
+    name: "", 
+    health: 100, 
+    hasSword: false 
+};
+
+let players = {};
+let targetX = player.x, targetY = player.y;
+
+// Inicialización de Firebase y juego
 auth.onAuthStateChanged(user => {
     if (user) {
         player.id = user.uid;
-        player.name = user.email.split("@")[0] || "Anónimo";
-        db.ref(`players/${player.id}`).set(player).catch(error => {
-            firebaseError = error.message; // Captura errores de autenticación
+        
+        // Obtenemos el nickname desde Firebase
+        db.ref(`users/${user.uid}/nickname`).once("value", snapshot => {
+            const nickname = snapshot.val() || "Anónimo"; // Si no hay nickname, usamos "Anónimo"
+            player.name = nickname;
+
+            // Guardamos el jugador en la base de datos
+            db.ref(`players/${player.id}`).set(player).catch(error => {
+                firebaseError = error.message; // Captura errores de autenticación
+            });
         });
 
         db.ref("players").on("value", snapshot => {
@@ -123,7 +149,8 @@ auth.onAuthStateChanged(user => {
             if (e.key === " ") attack();
         });
 
-        gameLoop();
+        // Iniciar juego cuando todas las imágenes estén cargadas
+        Promise.all([backgroundImg.onload, playerImg.onload, swordImg.onload]).then(gameLoop);
     } else {
         firebaseError = "No se ha iniciado sesión.";
     }
@@ -165,74 +192,6 @@ function gameLoop() {
 
     requestAnimationFrame(gameLoop);
 }
-
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// Cargar imágenes
-const playerImg = new Image();
-playerImg.src = "player.png"; // Imagen del jugador
-const swordImg = new Image();
-swordImg.src = "https://tr.rbxcdn.com/463a028944c35811cdcd881b3a3a444b/420/420/Decal/Png"; // Imagen de la espada
-
-// Jugador local
-let player = { 
-    id: null, 
-    x: Math.random() * canvas.width, 
-    y: Math.random() * canvas.height, 
-    size: 50, 
-    name: "", 
-    health: 100, 
-    hasSword: false 
-};
-
-let players = {};
-let targetX = player.x, targetY = player.y;
-
-auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;
-        
-        // Obtenemos el nickname desde Firebase
-        db.ref(`users/${user.uid}/nickname`).once("value", snapshot => {
-            const nickname = snapshot.val() || "Anónimo"; // Si no hay nickname, usamos "Anónimo"
-            player.name = nickname;
-
-            // Guardamos el jugador en la base de datos
-            db.ref(`players/${player.id}`).set(player).catch(error => {
-                firebaseError = error.message; // Captura errores de autenticación
-            });
-        });
-
-        db.ref("players").on("value", snapshot => {
-            players = snapshot.val() || {};
-            updateLeaderboard();
-        }, error => {
-            firebaseError = error.message; // Captura errores de lectura de la base de datos
-        });
-
-        window.addEventListener("mousemove", e => {
-            targetX = e.clientX;
-            targetY = e.clientY;
-        });
-
-        window.addEventListener("beforeunload", () => {
-            db.ref(`players/${player.id}`).remove().catch(error => {
-                firebaseError = error.message; // Captura errores al eliminar datos
-            });
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "e") toggleSword();
-            if (e.key === " ") attack();
-        });
-
-        gameLoop();
-    } else {
-        firebaseError = "No se ha iniciado sesión.";
-    }
-});
 
 function toggleSword() {
     player.hasSword = !player.hasSword;
@@ -284,7 +243,7 @@ setInterval(() => {
 }, 1000);
 </script>
 
-    <div id="controls">
+<div id="controls">
     <button id="equipButton">Equipar Espada</button>
     <button id="unequipButton">Desequipar Espada</button>
     <button id="attackButton">Atacar</button>
