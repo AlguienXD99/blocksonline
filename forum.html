@@ -66,6 +66,52 @@
             return text.replace(urlRegex, url => url.includes("blocksonline.neocities.org") ? url : "[Enlace bloqueado]");
         }
 
+        async function moderateContent(content) {
+            // Referencia a las palabras bloqueadas y sus excepciones en la base de datos
+            const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
+            const snapshot = await forbiddenWordsRef.once("value");
+            if (!snapshot.exists()) return content;
+
+            const blockedWordsData = snapshot.val();
+            const blockedWords = Object.keys(blockedWordsData);
+
+            // Crear todas las combinaciones posibles de las palabras bloqueadas
+            let combinations = [];
+            for (let i = 0; i < blockedWords.length; i++) {
+                for (let j = 0; j < blockedWords.length; j++) {
+                    if (i !== j) {
+                        combinations.push(blockedWords[i] + blockedWords[j]);
+                    }
+                }
+            }
+
+            let isValid = true;
+            // Verificar si alguna combinación o palabra exacta está en el contenido
+            for (const combination of combinations) {
+                const regex = new RegExp(combination, 'gi');
+                if (regex.test(content)) {
+                    if (!blockedWordsData[combination] || blockedWordsData[combination] !== false) {
+                        isValid = false;
+                        alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
+                        break;
+                    }
+                }
+            }
+
+            for (const word of blockedWords) {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                if (regex.test(content)) {
+                    if (!blockedWordsData[word] || blockedWordsData[word] !== false) {
+                        isValid = false;
+                        alert("Oops! Your vocabulary isn't professional, please don't use that bad word, thanks.");
+                        break;
+                    }
+                }
+            }
+
+            return isValid ? content : null;
+        }
+
         window.createPost = async function() {
             const subject = document.getElementById("subject").value.trim();
             const title = document.getElementById("title").value.trim();
@@ -87,28 +133,15 @@
                 return;
             }
 
-            // Verificar si el contenido contiene palabras prohibidas
-            const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
-            const snapshot = await forbiddenWordsRef.once("value");
-            const blockedWords = snapshot.val();
-            const blockedWordsArray = Object.keys(blockedWords);
-
-            let isValidContent = true;
-            blockedWordsArray.forEach(word => {
-                const regex = new RegExp(`\\b${word}\\b`, 'gi');
-                if (regex.test(content)) {
-                    isValidContent = false;
-                    alert("Tu publicación contiene palabras inapropiadas. Por favor, edítala.");
-                }
-            });
-
-            if (!isValidContent) return;
+            // Moderar el contenido del post
+            const moderatedContent = await moderateContent(content);
+            if (!moderatedContent) return; // Detener si el contenido fue moderado
 
             // Guardar la publicación
             db.collection("posts").add({
                 subject: filterText(subject),
                 title: filterText(title),
-                content: filterText(content),
+                content: filterText(moderatedContent),
                 user: user.uid,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
@@ -123,7 +156,6 @@
             const forum = document.getElementById("forum");
             forum.innerHTML = ""; // Limpiar contenido actual antes de agregar nuevos posts
 
-            // Usamos Promise.all para esperar a que todas las consultas del usuario terminen
             const postsArray = await Promise.all(snapshot.docs.map(async doc => {
                 const data = doc.data();
                 const date = data.timestamp?.toDate() || new Date();
@@ -145,7 +177,6 @@
                 `;
             }));
 
-            // Agregar los posts al foro de una sola vez
             forum.innerHTML = postsArray.join('');
         });
     });
