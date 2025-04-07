@@ -1,10 +1,9 @@
-// Importa las referencias necesarias de Firebase
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+// banned.js
 
-// Asegúrate de que Firebase ya esté inicializado en otro archivo antes de usar esto
-const auth = getAuth(); // Obtiene la instancia de auth ya inicializada
-const db = getDatabase(); // Obtiene la instancia de db ya inicializada
+// Importa las instancias de Firebase que ya están inicializadas
+import { db, auth } from './firebaseInit.js'; // Importa desde el archivo donde se inicializa Firebase
+import { ref, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 // Verifica el estado de autenticación
 onAuthStateChanged(auth, (user) => {
