@@ -138,6 +138,7 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.05;
     player.y += (targetY - player.y) * 0.05;
 
+    // Iterar sobre todos los jugadores
     for (const id in players) {
         const p = players[id];
 
@@ -201,9 +202,9 @@ function gameLoop() {
             if (userData.hasSword) {
                 ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
-        }); // Aquí falta la llave de cierre para la función `userRef.once`
-    } // Aquí falta la llave de cierre para el for loop
-}
+        }); // Cierre de `userRef.once`
+    } // Cierre de `for (const id in players)`
+} // Cierre de `gameLoop`
 
     // Mostrar errores de Firebase en el canvas
     if (firebaseError) {
