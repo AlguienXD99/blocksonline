@@ -277,6 +277,47 @@ function updateLeaderboard() {
 
 const speed = 5; // Velocidad constante de movimiento
 
+let playerItems = {}; // Almacena los artículos equipados de los jugadores
+
+// Función para cargar los artículos equipados desde Firebase
+function loadEquippedItems(playerId) {
+    const playerRef = db.ref(`users/${playerId}/equippedItems`);
+
+    playerRef.once('value', (snapshot) => {
+        const equippedItems = snapshot.val();
+        if (equippedItems) {
+            // Iterar sobre cada artículo en "equippedItems"
+            for (let itemKey in equippedItems) {
+                const item = equippedItems[itemKey];  // El objeto del artículo (por ejemplo, AprilT-Shirt)
+                if (item.imageUrl) {
+                    // Aquí obtenemos la URL directamente desde Firebase y la almacenamos
+                    const imageUrl = item.imageUrl;
+
+                    // Crear una imagen y cargarla desde la URL proporcionada en la base de datos
+                    const img = new Image();
+                    img.onload = () => {
+                        // Almacenar la imagen y la posición del artículo
+                        playerItems[playerId] = playerItems[playerId] || []; // Crear arreglo si no existe
+                        playerItems[playerId].push({
+                            image: img,
+                            position: item.position || 'torso', // Usar la posición o por defecto 'torso'
+                        });
+                    };
+
+                    // Aquí no es necesario definir una ruta exacta de la imagen, Firebase ya te da la URL
+                    img.src = imageUrl; // Cargamos la imagen directamente desde la URL almacenada en Firebase
+                }
+            }
+        }
+    });
+}
+
+// Cargar los artículos equipados para cada jugador
+for (const id in players) {
+    loadEquippedItems(id);
+}
+
+// Modificar el gameLoop para dibujar los artículos equipados
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -306,6 +347,17 @@ function gameLoop() {
         ctx.fillText(p.name, p.x - 20, p.y - 30);
         ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
+        // Dibujar los artículos equipados si existen
+        if (playerItems[id]) {
+            for (let item of playerItems[id]) {
+                if (item.position === 'torso') {
+                    // Dibujar en la posición del torso, ajusta las coordenadas según sea necesario
+                    ctx.drawImage(item.image, p.x - 25, p.y - 25, 50, 50);
+                }
+                // Puedes agregar más condiciones para otras posiciones (como 'head', 'legs', etc.)
+            }
+        }
+
         // Dibujar espada si la tiene equipada
         if (p.hasSword) {
             ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
@@ -314,6 +366,7 @@ function gameLoop() {
 
     requestAnimationFrame(gameLoop);
 }
+
 
 // Actualizar base de datos cada segundo
 setInterval(() => {
