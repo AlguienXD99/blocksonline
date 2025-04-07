@@ -150,6 +150,18 @@ for (const id in players) {
     ctx.fillText(p.name, p.x - 20, p.y - 30);
     ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
+for (const id in users) {  // Cambiamos 'players' a 'users'
+    const p = users[id];  // Accedemos al usuario en lugar del jugador
+
+    // Dibujar jugador
+    ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+    // Dibujar nombre y vida
+    ctx.fillStyle = "black";
+    ctx.font = "14px Arial";
+    ctx.fillText(p.name, p.x - 20, p.y - 30);
+    ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
     // Dibujar items equipados
     if (p.equippedItems) {
         for (const itemKey in p.equippedItems) {  // Recorremos cada ítem
