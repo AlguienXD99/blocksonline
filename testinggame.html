@@ -19,49 +19,45 @@
         }
         #gui {
             position: absolute;
-            top: 500px;
+            top: 10px;
             left: 10px;
             background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 10px;
             border-radius: 5px;
             font-family: Arial, sans-serif;
+        }
+        #gui {
+            top: 500px;
             cursor: pointer;
         }
-        canvas:hover {
-            cursor: url('cursor.png'), auto;
-        }
-        #gameContainer {
-            background: linear-gradient(to bottom, skyblue 50%, gray 50%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100vw;
-            background-image: url('fondo.png');
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center;
-        }
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-        }
-        button {
-            background-color: black;
-            color: white;
-            padding: 10px 20px;
-        }
+    canvas:hover {
+        cursor: url('cursor.png'), auto;
+     }
     </style>
 </head>
 <body>
 <div id="gameContainer">
     <canvas id="gameCanvas"></canvas>
 </div>
+
+<style>
+   #gameContainer {
+    background: linear-gradient(to bottom, skyblue 50%, gray 50%); /* Degradado de celeste a gris */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Toda la pantalla */
+    width: 100vw; /* Todo el ancho */
+
+    /* Corrección de background-image */
+    background-image: url('fondo.png'); 
+    background-repeat: no-repeat;
+    background-size: cover; /* Ajusta la imagen para cubrir todo el contenedor */
+    background-position: center; /* Centra la imagen */
+}
+
+</style>
 
 <div id="leaderboard">Leaderboard</div>
 <div id="gui">[E] Equipar/Desequipar Espada | [Espacio] Atacar</div>
@@ -87,21 +83,143 @@ const db = firebase.database();
 const auth = firebase.auth();
 
 const canvas = document.getElementById("gameCanvas");
+    
+// Cargar la imagen de fondo
+const backgroundImg = new Image();
+backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta correcta
+backgroundImg.onload = () => {
+    gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
+};
+let firebaseError = ""; // Variable para almacenar el error
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;
+        player.name = user.email.split("@")[0] || "Anónimo";
+        db.ref(`players/${player.id}`).set(player).catch(error => {
+            firebaseError = error.message; // Captura errores de autenticación
+        });
+
+        db.ref("players").on("value", snapshot => {
+            players = snapshot.val() || {};
+            updateLeaderboard();
+        }, error => {
+            firebaseError = error.message; // Captura errores de lectura de la base de datos
+        });
+
+        window.addEventListener("mousemove", e => {
+            targetX = e.clientX;
+            targetY = e.clientY;
+        });
+
+        window.addEventListener("beforeunload", () => {
+            db.ref(`players/${player.id}`).remove().catch(error => {
+                firebaseError = error.message; // Captura errores al eliminar datos
+            });
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "e") toggleSword();
+            if (e.key === " ") attack();
+        });
+
+        gameLoop();
+    } else {
+        firebaseError = "No se ha iniciado sesión.";
+    }
+});
+
+function gameLoop() {
+    console.log("gameLoop ejecutándose...");
+    // Dibujar la imagen de fondo
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+    // Suavizar el movimiento
+    player.x += (targetX - player.x) * 0.05;
+    player.y += (targetY - player.y) * 0.05;
+
+ for (const id in players) {
+    const p = players[id];
+
+    // Dibujar jugador
+    ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+    // Dibujar nombre y vida
+    ctx.fillStyle = "black";
+    ctx.font = "14px Arial";
+    ctx.fillText(p.name, p.x - 20, p.y - 30);
+    ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+// Obtener el UID del usuario autenticado
+const userUid = firebase.auth().currentUser.uid;
+
+// Obtener la referencia de la base de datos de los datos del jugador
+const userRef = firebase.database().ref('users/' + userUid);
+
+// Obtener los datos del jugador desde la base de datos
+userRef.once('value', (snapshot) => {
+    const userData = snapshot.val();
+
+    // Asegúrate de que los datos del jugador estén disponibles y de que tenga items equipados
+    if (userData && userData.equippedItems) {
+        userData.equippedItems.forEach(item => {
+            const imageUrl = item.imageUrl;
+            const itemPosition = item.position;
+
+            // Crear la imagen del ítem
+            const itemImg = new Image();
+            itemImg.src = imageUrl;
+
+            // Dibujar el ítem cuando la imagen se haya cargado
+            itemImg.onload = () => {
+                // Determinar la posición del ítem y dibujarlo en el canvas
+                switch (itemPosition) {
+                    case "head":
+                        ctx.drawImage(itemImg, p.x - 25, p.y - 50, 50, 50);  // Coloca el ítem en la cabeza
+                        break;
+                    case "torso":
+                        ctx.drawImage(itemImg, p.x - 25, p.y, 50, 50);  // Coloca el ítem en el torso
+                        break;
+                    case "legs":
+                        ctx.drawImage(itemImg, p.x - 25, p.y + 25, 50, 50);  // Coloca el ítem en las piernas
+                        break;
+                    case "weapon":
+                        ctx.drawImage(itemImg, p.x + 15, p.y, 40, 40);  // Coloca el ítem como arma
+                        break;
+                    default:
+                        console.log(`Posición de item desconocida: ${itemPosition}`);
+                }
+            };
+        });
+    }
+
+    // Si el jugador tiene una espada equipada, dibujarla
+    if (userData.hasSword) {
+        ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+    }
+});
+
+    // Mostrar errores de Firebase en el canvas
+    if (firebaseError) {
+        ctx.fillStyle = "red";
+        ctx.font = "16px Arial";
+        ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let firebaseError = ""; // Variable para errores de Firebase
-
-// Imágenes
-const backgroundImg = new Image();
-backgroundImg.src = "fondo.png";
+// Cargar imágenes
 const playerImg = new Image();
-playerImg.src = "player.png";
+playerImg.src = "player.png"; // Imagen del jugador
 const swordImg = new Image();
-swordImg.src = "https://tr.rbxcdn.com/463a028944c35811cdcd881b3a3a444b/420/420/Decal/Png";
+swordImg.src = "https://tr.rbxcdn.com/463a028944c35811cdcd881b3a3a444b/420/420/Decal/Png"; // Imagen de la espada
 
-// Jugador
+// Jugador local
 let player = { 
     id: null, 
     x: Math.random() * canvas.width, 
@@ -111,24 +229,32 @@ let player = {
     health: 100, 
     hasSword: false 
 };
+
 let players = {};
 let targetX = player.x, targetY = player.y;
-let playerItems = {};
 
 auth.onAuthStateChanged(user => {
     if (user) {
         player.id = user.uid;
         
         // Obtenemos el nickname desde Firebase
-     db.ref(`users/${user.uid}/nickname`).once("value", snapshot => {
+        db.ref(`users/${user.uid}/nickname`).once("value", snapshot => {
             const nickname = snapshot.val() || "Anónimo"; // Si no hay nickname, usamos "Anónimo"
             player.name = nickname;
 
             // Guardamos el jugador en la base de datos
-     db.ref(`players/${player.id}`).set(player).catch(error => {
+            db.ref(`players/${player.id}`).set(player).catch(error => {
                 firebaseError = error.message; // Captura errores de autenticación
             });
         });
+
+        db.ref("players").on("value", snapshot => {
+            players = snapshot.val() || {};
+            updateLeaderboard();
+        }, error => {
+            firebaseError = error.message; // Captura errores de lectura de la base de datos
+        });
+
         window.addEventListener("mousemove", e => {
             targetX = e.clientX;
             targetY = e.clientY;
@@ -136,7 +262,7 @@ auth.onAuthStateChanged(user => {
 
         window.addEventListener("beforeunload", () => {
             db.ref(`players/${player.id}`).remove().catch(error => {
-                firebaseError = error.message;
+                firebaseError = error.message; // Captura errores al eliminar datos
             });
         });
 
@@ -145,7 +271,7 @@ auth.onAuthStateChanged(user => {
             if (e.key === " ") attack();
         });
 
-        gameLoop(); // Iniciar el bucle de juego al cargar
+        gameLoop();
     } else {
         firebaseError = "No se ha iniciado sesión.";
     }
@@ -158,15 +284,17 @@ function toggleSword() {
 
 function attack() {
     if (!player.hasSword) return;
+    
     for (const id in players) {
         if (id !== player.id) {
             const enemy = players[id];
             const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-            if (distance < 60) {
+            if (distance < 60) { // Rango de ataque
                 let newHealth = Math.max(0, enemy.health - 20);
                 db.ref(`players/${id}/health`).set(newHealth);
 
                 if (newHealth === 0) {
+                    // Respawn del jugador muerto
                     db.ref(`players/${id}`).set({ 
                         id: id, 
                         x: Math.random() * canvas.width, 
@@ -191,48 +319,58 @@ function updateLeaderboard() {
     }
 }
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el lienzo
-    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+const speed = 5; // Velocidad constante de movimiento
 
-    player.x += (targetX - player.x) * 0.05;
-    player.y += (targetY - player.y) * 0.05;
-
-    for (const id in players) {
-        const p = players[id];
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-        }
-    }
-
-    if (firebaseError) {
-        ctx.fillStyle = "red";
-        ctx.font = "16px Arial";
-        ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
-    }
-
-    requestAnimationFrame(gameLoop); // Continuar el bucle
-}
-
-// Actualizar la base de datos cada segundo
+// Actualizar base de datos cada segundo
 setInterval(() => {
     db.ref(`players/${player.id}`).set(player);
 }, 1000);
-
 </script>
 
-<div id="controls">
+    <div id="controls">
     <button id="equipButton">Equipar Espada</button>
     <button id="unequipButton">Desequipar Espada</button>
     <button id="attackButton">Atacar</button>
 </div>
 
+<style>
+    #controls {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+    }
+    
+    button {
+        background-color: black;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    button:hover {
+        background-color: gray;
+    }
+</style>
+
+<script>
+    document.getElementById("equipButton").addEventListener("click", () => {
+        player.hasSword = true;
+        db.ref(`players/${player.id}/hasSword`).set(true);
+    });
+
+    document.getElementById("unequipButton").addEventListener("click", () => {
+        player.hasSword = false;
+        db.ref(`players/${player.id}/hasSword`).set(false);
+    });
+
+    document.getElementById("attackButton").addEventListener("click", attack);
+</script>
+    <script type="module" src="banned.js"></script>
 </body>
 </html>
