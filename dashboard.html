@@ -75,13 +75,13 @@ async function saveProfile() {
 
         // Referencia a las palabras bloqueadas y sus excepciones en la base de datos
         const forbiddenWordsRef = ref(db, "forbiddenWords/blockedWords");
-        
+
         // Obtener las palabras bloqueadas
         const snapshot = await get(forbiddenWordsRef);
         if (snapshot.exists()) {
             const blockedWordsData = snapshot.val();  // Obtenemos los datos completos
             const blockedWords = Object.keys(blockedWordsData);  // Solo las claves (palabras bloqueadas)
-            
+
             // Crear todas las combinaciones posibles de las palabras bloqueadas
             let combinations = [];
             for (let i = 0; i < blockedWords.length; i++) {
@@ -91,8 +91,8 @@ async function saveProfile() {
                     }
                 }
             }
-            
-            // Verificar si alguna palabra o combinación está en el nickname
+
+            // Verificar si alguna combinación de las palabras bloqueadas está en el nickname
             let isValid = true;
             combinations.forEach(combination => {
                 const regex = new RegExp(combination, 'gi'); // Regex para buscar combinaciones
@@ -116,7 +116,7 @@ async function saveProfile() {
                     }
                 }
             });
-            
+
             // Si el nickname es válido, proceder a guardar
             if (isValid) {
                 const userRef = ref(db, "users/" + user.uid);
@@ -128,7 +128,6 @@ async function saveProfile() {
         }
     }
 }
-
 
         // 🔹 Cerrar sesión
         async function logout() {
