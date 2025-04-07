@@ -135,8 +135,8 @@ function gameLoop() {
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
     // Suavizar el movimiento
-    player.x += (targetX - player.x) * 0.1;
-    player.y += (targetY - player.y) * 0.1;
+    player.x += (targetX - player.x) * 0.5;
+    player.y += (targetY - player.y) * 0.5;
 
     for (const id in players) {
         const p = players[id];
