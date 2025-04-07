@@ -119,9 +119,10 @@
                 });
             };
 
+            // Consulta de publicaciones, ordenadas por la fecha de creación (más reciente primero)
             db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
                 const forum = document.getElementById("forum");
-                forum.innerHTML = "";
+                forum.innerHTML = ""; // Limpiar contenido actual
                 snapshot.forEach(async doc => {
                     const data = doc.data();
                     const date = data.timestamp?.toDate() || new Date();
