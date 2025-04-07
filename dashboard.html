@@ -60,6 +60,21 @@
                 }
             });
         }
+async function checkUniqueNickname(nickname) {
+    const nicknameRef = ref(db, "users");
+    const snapshot = await get(nicknameRef);
+
+    if (snapshot.exists()) {
+        const usersData = snapshot.val();
+        // Buscar si ya existe un usuario con el mismo nickname
+        for (const userId in usersData) {
+            if (usersData[userId].nickname === nickname) {
+                return false; // El nickname ya está en uso
+            }
+        }
+    }
+    return true; // El nickname es único
+}
 
 async function saveProfile() {
     const user = auth.currentUser;
@@ -72,7 +87,12 @@ async function saveProfile() {
             alert("Nicknames can only contain letters and numbers. Please choose another name.");
             return; // Detener la ejecución si hay caracteres prohibidos
         }
-
+     // Verificar si el nickname ya está en uso
+        const isUnique = await checkUniqueNickname(nickname);
+        if (!isUnique) {
+            alert("Este nickname ya está en uso. Por favor, elige otro.");
+            return;
+        }
         // Referencia a las palabras bloqueadas y sus excepciones en la base de datos
         const forbiddenWordsRef = ref(db, "forbiddenWords/blockedWords");
 
