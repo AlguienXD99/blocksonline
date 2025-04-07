@@ -129,6 +129,15 @@ auth.onAuthStateChanged(user => {
     }
 });
 
+function gameLoop() {
+    console.log("gameLoop ejecutándose...");
+    // Dibujar la imagen de fondo
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+    // Suavizar el movimiento
+    player.x += (targetX - player.x) * 0.05;
+    player.y += (targetY - player.y) * 0.05;
+
  for (const id in players) {
     const p = players[id];
 
