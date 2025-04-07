@@ -1,23 +1,12 @@
 // Importa Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// Configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
+// Aquí no necesitamos la configuración ni la inicialización de Firebase, ya que se asume que Firebase ya fue inicializado en otro archivo
 
-// Inicializa Firebase
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+// Obtén la instancia de Firebase (asegurándonos de que está disponible globalmente)
+const db = getDatabase();  // Usa la base de datos globalmente disponible
+const auth = getAuth();    // Usa la autenticación globalmente disponible
 
 // Verifica el estado de autenticación
 onAuthStateChanged(auth, (user) => {
