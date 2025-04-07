@@ -130,39 +130,79 @@ auth.onAuthStateChanged(user => {
 });
 
 function gameLoop() {
-    // Dibujar la imagen de fondo
-    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Suavizar el movimiento
-    player.x += (targetX - player.x) * 0.1;
-    player.y += (targetY - player.y) * 0.1;
+    // Calcular la dirección hacia el destino
+    let dx = targetX - player.x;
+    let dy = targetY - player.y;
+    let distance = Math.hypot(dx, dy);
 
-    for (const id in players) {
-        const p = players[id];
+    // Mover solo si la distancia es mayor que la velocidad
+    if (distance > speed) {
+        player.x += (dx / distance) * speed;
+        player.y += (dy / distance) * speed;
+    } else {
+        player.x = targetX;
+        player.y = targetY;
+    }
 
-        // Dibujar jugador
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+    // Obtener los jugadores desde Firebase RTDB (aquí usamos una referencia de ejemplo)
+    const playersRef = firebase.database().ref('users');
+    playersRef.once('value', snapshot => {
+        const playersData = snapshot.val();
 
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+        for (const id in playersData) {
+            const p = playersData[id];
 
-        // Dibujar espada si la tiene equipada
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+            // Dibujar jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.nickname, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+            // Verificar si el jugador tiene configuraciones de avatar y objetos equipados
+            if (p.avatarConfig && p.avatarConfig.equippedItems) {
+                p.avatarConfig.equippedItems.forEach(item => {
+                    if (item.imageUrl && item.position) {
+                        // Crear la imagen del ítem y obtener la URL
+                        const itemImg = new Image();
+                        itemImg.src = item.imageUrl; // Cargar la imagen del ítem
+
+                        // Asegúrate de que la posición es correcta para cada tipo de ítem
+                        let itemX = p.x, itemY = p.y;
+
+                        // Dependiendo de la posición del ítem, ajusta la coordenada
+                        switch (item.position) {
+                            case "torso":
+                                itemX -= 25; // Ajusta según la posición en el torso
+                                itemY -= 20;
+                                break;
+                            case "head":
+                                itemX -= 25; // Ajusta según la posición en la cabeza
+                                itemY -= 40;
+                                break;
+                            // Puedes agregar más casos dependiendo de otras posiciones (por ejemplo, "legs", "feet", etc.)
+                        }
+
+                        // Dibujar el ítem en la posición correspondiente
+                        itemImg.onload = () => {
+                            ctx.drawImage(itemImg, itemX, itemY, 40, 40); // Ajusta el tamaño del ítem si es necesario
+                        };
+                    }
+                });
+            }
+
+            // Si tiene una espada equipada, dibujarla (ejemplo)
+            if (p.hasSword) {
+                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+            }
         }
-    }
 
-    // Mostrar errores de Firebase en el canvas
-    if (firebaseError) {
-        ctx.fillStyle = "red";
-        ctx.font = "16px Arial";
-        ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
-    }
-
-    requestAnimationFrame(gameLoop);
+        requestAnimationFrame(gameLoop);
+    });
 }
 
 const ctx = canvas.getContext("2d");
