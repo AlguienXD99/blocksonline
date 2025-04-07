@@ -129,8 +129,14 @@ auth.onAuthStateChanged(user => {
     }
 });
 
+function fetchPlayerData(userUid) {
+    const userRef = firebase.database().ref('users/' + userUid);
+    return userRef.once('value');
+}
+
 function gameLoop() {
     console.log("gameLoop ejecutándose...");
+
     // Dibujar la imagen de fondo
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
@@ -138,36 +144,32 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.05;
     player.y += (targetY - player.y) * 0.05;
 
-    // Iterar sobre todos los jugadores
-    for (const id in players) {
-        const p = players[id];
+    // Obtener el UID del usuario autenticado
+    const userUid = firebase.auth().currentUser.uid;
 
-        // Dibujar jugador
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+    // Obtener los datos del jugador desde la base de datos
+    fetchPlayerData(userUid).then(snapshot => {
+        const userData = snapshot.val();
 
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+        // Iterar sobre todos los jugadores
+        for (const id in players) {
+            const p = players[id];
 
-        // Obtener el UID del usuario autenticado
-        const userUid = firebase.auth().currentUser.uid;
+            // Dibujar jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-        // Obtener la referencia de la base de datos de los datos del jugador
-        const userRef = firebase.database().ref('users/' + userUid);
-
-        // Obtener los datos del jugador desde la base de datos
-        userRef.once('value', (snapshot) => {
-            const userData = snapshot.val();
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.name, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
             // Asegúrate de que los datos del jugador estén disponibles y de que tenga items equipados
             if (userData && userData.equippedItems) {
-                // Iteramos sobre cada objeto dentro de "equippedItems"
+                // Iterar sobre los ítems equipados
                 for (const itemKey in userData.equippedItems) {
-                    const item = userData.equippedItems[itemKey];  // Obtenemos el item dinámicamente
+                    const item = userData.equippedItems[itemKey];  // Obtenemos el ítem dinámicamente
 
-                    // Acceder a imageUrl y position dentro del objeto de cada item
                     const imageUrl = item.imageUrl;
                     const itemPosition = item.position;
 
@@ -202,18 +204,18 @@ function gameLoop() {
             if (userData.hasSword) {
                 ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
-        }); // Cierre de `userRef.once`
-    } // Cierre de `for (const id in players)`
-} // Cierre de `gameLoop`
+        }
 
-    // Mostrar errores de Firebase en el canvas
-    if (firebaseError) {
-        ctx.fillStyle = "red";
-        ctx.font = "16px Arial";
-        ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
-    }
+        // Mostrar errores de Firebase en el canvas
+        if (firebaseError) {
+            ctx.fillStyle = "red";
+            ctx.font = "16px Arial";
+            ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
+        }
 
-    requestAnimationFrame(gameLoop);
+        requestAnimationFrame(gameLoop);  // Continuar el ciclo de animación
+    });
+} 
 
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
