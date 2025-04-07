@@ -281,12 +281,20 @@ let playerItems = {}; // Almacena los artículos equipados de los jugadores
 let loadedItemsCount = 0; // Contador para saber cuántos artículos se han cargado
 let totalItemsToLoad = 0; // Número total de artículos que necesitamos cargar
 
-// Función para cargar una imagen desde Firebase con promesa
 function loadImage(imageUrl) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve(img);  // Resuelve la promesa cuando la imagen esté cargada
-        img.onerror = () => reject(new Error(`Error al cargar la imagen: ${imageUrl}`));  // Rechaza si hay error
+        
+        img.onload = () => {
+            console.log("Imagen cargada correctamente:", imageUrl);
+            resolve(img);
+        };
+        
+        img.onerror = (error) => {
+            console.error("Error al cargar la imagen:", imageUrl, error);
+            reject(error);
+        };
+
         img.src = imageUrl;
     });
 }
