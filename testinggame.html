@@ -118,18 +118,17 @@ let playerItems = {};
 auth.onAuthStateChanged(user => {
     if (user) {
         player.id = user.uid;
-        player.name = user.email.split("@")[0] || "Anónimo";
-        db.ref(`players/${player.id}`).set(player).catch(error => {
-            firebaseError = error.message;
-        });
+        
+        // Obtenemos el nickname desde Firebase
+        db.ref(users/${user.uid}/nickname).once("value", snapshot => {
+            const nickname = snapshot.val() || "Anónimo"; // Si no hay nickname, usamos "Anónimo"
+            player.name = nickname;
 
-        db.ref("players").on("value", snapshot => {
-            players = snapshot.val() || {};
-            updateLeaderboard();
-        }, error => {
-            firebaseError = error.message;
+            // Guardamos el jugador en la base de datos
+            db.ref(players/${player.id}).set(player).catch(error => {
+                firebaseError = error.message; // Captura errores de autenticación
+            });
         });
-
         window.addEventListener("mousemove", e => {
             targetX = e.clientX;
             targetY = e.clientY;
