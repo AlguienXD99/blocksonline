@@ -7,6 +7,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script> <!-- Agregada esta línea -->
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
         input, textarea, button { display: block; margin: 10px auto; width: 80%; padding: 8px; }
@@ -88,7 +89,7 @@
                 }
 
                 // Verificar si el contenido contiene palabras prohibidas
-                const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
+                const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");  // Usamos la base de datos en tiempo real
                 const snapshot = await forbiddenWordsRef.once("value");
                 const blockedWords = snapshot.val();
                 const blockedWordsArray = Object.keys(blockedWords);
