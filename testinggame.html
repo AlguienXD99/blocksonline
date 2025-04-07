@@ -168,39 +168,56 @@ function gameLoop() {
                 // Acceder directamente a los elementos equipados
                 for (const itemName in p.equippedItems) {
                     const item = p.equippedItems[itemName];
-                    if (item.imageUrl && item.position) {
-                        // Crear la imagen del ítem y obtener la URL
-                        const itemImg = new Image();
-                        itemImg.src = item.imageUrl; // Cargar la imagen del ítem
+                    
+                    try {
+                        if (item.imageUrl && item.position) {
+                            // Crear la imagen del ítem y obtener la URL
+                            const itemImg = new Image();
+                            
+                            // Agregar manejo de error de imagen
+                            itemImg.onerror = () => {
+                                console.error("Error al cargar la imagen del ítem: ", item.imageUrl);
+                            };
 
-                        // Asegúrate de que la posición es correcta para cada tipo de ítem
-                        let itemX = p.x, itemY = p.y;
+                            itemImg.src = item.imageUrl; // Cargar la imagen del ítem
 
-                        // Dependiendo de la posición del ítem, ajusta la coordenada
-                        switch (item.position) {
-                            case "torso":
-                                itemX -= 25; // Ajusta según la posición en el torso
-                                itemY -= 20;
-                                break;
-                            case "head":
-                                itemX -= 25; // Ajusta según la posición en la cabeza
-                                itemY -= 40;
-                                break;
-                            // Agregar más casos si hay otras posiciones
-                            case "legs":
-                                itemX -= 15; // Ajusta según la posición en las piernas
-                                itemY += 30;
-                                break;
-                            case "feet":
-                                itemX -= 10; // Ajusta según la posición en los pies
-                                itemY += 50;
-                                break;
+                            // Asegúrate de que la posición es correcta para cada tipo de ítem
+                            let itemX = p.x, itemY = p.y;
+
+                            // Dependiendo de la posición del ítem, ajusta la coordenada
+                            switch (item.position) {
+                                case "torso":
+                                    itemX -= 25; // Ajusta según la posición en el torso
+                                    itemY -= 20;
+                                    break;
+                                case "head":
+                                    itemX -= 25; // Ajusta según la posición en la cabeza
+                                    itemY -= 40;
+                                    break;
+                                // Agregar más casos si hay otras posiciones
+                                case "legs":
+                                    itemX -= 15; // Ajusta según la posición en las piernas
+                                    itemY += 30;
+                                    break;
+                                case "feet":
+                                    itemX -= 10; // Ajusta según la posición en los pies
+                                    itemY += 50;
+                                    break;
+                                default:
+                                    console.warn("Posición de ítem no reconocida: ", item.position);
+                                    break;
+                            }
+
+                            // Dibujar el ítem en la posición correspondiente
+                            itemImg.onload = () => {
+                                console.log("Imagen cargada correctamente:", item.imageUrl);
+                                ctx.drawImage(itemImg, itemX, itemY, 40, 40); // Ajusta el tamaño del ítem si es necesario
+                            };
+                        } else {
+                            console.warn("El ítem no tiene imagenUrl o posición definida: ", item);
                         }
-
-                        // Dibujar el ítem en la posición correspondiente
-                        itemImg.onload = () => {
-                            ctx.drawImage(itemImg, itemX, itemY, 40, 40); // Ajusta el tamaño del ítem si es necesario
-                        };
+                    } catch (error) {
+                        console.error("Error al procesar el ítem:", itemName, error);
                     }
                 }
             }
@@ -214,6 +231,7 @@ function gameLoop() {
         requestAnimationFrame(gameLoop);
     });
 }
+
 
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
