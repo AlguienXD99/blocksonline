@@ -306,6 +306,38 @@ function gameLoop() {
         ctx.fillText(p.name, p.x - 20, p.y - 30);
         ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
+        // Verificar y dibujar los objetos equipados para cada jugador
+        if (p.avatarConfig && p.avatarConfig.equippedItems) {
+            p.avatarConfig.equippedItems.forEach(item => {
+                if (item.imageUrl && item.position) {
+                    // Obtener la URL de la imagen del ítem y la posición
+                    const itemImg = new Image();
+                    itemImg.src = item.imageUrl; // Cargar la imagen del ítem
+
+                    // Asegúrate de que la posición es correcta para cada tipo de ítem
+                    let itemX = p.x, itemY = p.y;
+
+                    // Dependiendo de la posición del ítem, ajusta la coordenada
+                    switch (item.position) {
+                        case "torso":
+                            itemX -= 25; // Ajusta según la posición en el torso
+                            itemY -= 20;
+                            break;
+                        case "head":
+                            itemX -= 25; // Ajusta según la posición en la cabeza
+                            itemY -= 40;
+                            break;
+                        // Puedes agregar más casos dependiendo de otras posiciones (por ejemplo, "legs", "feet", etc.)
+                    }
+
+                    // Dibujar el ítem en la posición correspondiente
+                    itemImg.onload = () => {
+                        ctx.drawImage(itemImg, itemX, itemY, 40, 40); // Ajusta el tamaño del ítem si es necesario
+                    };
+                }
+            });
+        }
+
         // Dibujar espada si la tiene equipada
         if (p.hasSword) {
             ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
