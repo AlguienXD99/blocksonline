@@ -65,12 +65,14 @@ async function saveProfile() {
     const user = auth.currentUser;
     if (user) {
         const nickname = document.getElementById("nickname").value;
-// ✅ Verificar si contiene caracteres no permitidos
-const invalidCharsRegex = /[^a-zA-Z0-9]/; // Expresión regular para detectar cualquier carácter que no sea letra o número
-if (invalidCharsRegex.test(nickname)) {
-    alert("Nicknames can only contain letters and numbers. Please choose another name.");
-    return; // Detener la ejecución si hay caracteres prohibidos
-}
+
+        // ✅ Verificar si contiene caracteres no permitidos
+        const invalidCharsRegex = /[^a-zA-Z0-9]/; // Expresión regular para detectar cualquier carácter que no sea letra o número
+        if (invalidCharsRegex.test(nickname)) {
+            alert("Nicknames can only contain letters and numbers. Please choose another name.");
+            return; // Detener la ejecución si hay caracteres prohibidos
+        }
+
         // Referencia a las palabras bloqueadas y sus excepciones en la base de datos
         const forbiddenWordsRef = ref(db, "forbiddenWords/blockedWords");
         
@@ -126,6 +128,7 @@ if (invalidCharsRegex.test(nickname)) {
         }
     }
 }
+
 
         // 🔹 Cerrar sesión
         async function logout() {
