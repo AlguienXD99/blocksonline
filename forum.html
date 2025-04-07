@@ -66,7 +66,7 @@
                 return text.replace(urlRegex, url => url.includes("blocksonline.neocities.org") ? url : "[Enlace bloqueado]");
             }
 
-            window.createPost = function() {
+            window.createPost = async function() {
                 const subject = document.getElementById("subject").value.trim();
                 const title = document.getElementById("title").value.trim();
                 const content = document.getElementById("content").value.trim();
@@ -87,11 +87,29 @@
                     return;
                 }
 
+                // Verificar si el contenido contiene palabras prohibidas
+                const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
+                const snapshot = await forbiddenWordsRef.once("value");
+                const blockedWords = snapshot.val();
+                const blockedWordsArray = Object.keys(blockedWords);
+
+                let isValidContent = true;
+                blockedWordsArray.forEach(word => {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    if (regex.test(content)) {
+                        isValidContent = false;
+                        alert("Tu publicación contiene palabras inapropiadas. Por favor, edítala.");
+                    }
+                });
+
+                if (!isValidContent) return;
+
+                // Guardar la publicación
                 db.collection("posts").add({
                     subject: filterText(subject),
                     title: filterText(title),
                     content: filterText(content),
-                    user: user.email,
+                    user: user.uid, // Guardamos el UID del usuario
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     document.getElementById("subject").value = "";
@@ -100,15 +118,22 @@
                 });
             };
 
-            db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+            db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
                 const forum = document.getElementById("forum");
                 forum.innerHTML = "";
-                snapshot.forEach(doc => {
+                snapshot.forEach(async doc => {
                     const data = doc.data();
                     const date = data.timestamp?.toDate() || new Date();
+
+                    // Obtener el nickname del usuario desde la base de datos
+                    const userRef = firebase.database().ref("users/" + data.user);
+                    const userSnapshot = await userRef.once("value");
+                    const userData = userSnapshot.val();
+                    const userNickname = userData ? userData.nickname : "Usuario desconocido";
+
                     forum.innerHTML += `
                         <div class="post">
-                            <strong>${data.user}</strong><br>
+                            <strong>${userNickname}</strong><br>
                             <strong>Asunto:</strong> ${data.subject}<br>
                             <strong>Título:</strong> ${data.title}<br>
                             <p>${data.content}</p>
