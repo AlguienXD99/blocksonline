@@ -138,7 +138,7 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.05;
     player.y += (targetY - player.y) * 0.05;
 
- for (const id in players) {
+for (const id in players) {
     const p = players[id];
 
     // Dibujar jugador
@@ -150,54 +150,55 @@ function gameLoop() {
     ctx.fillText(p.name, p.x - 20, p.y - 30);
     ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-// Obtener el UID del usuario autenticado
-const userUid = firebase.auth().currentUser.uid;
+    // Obtener el UID del usuario autenticado
+    const userUid = firebase.auth().currentUser.uid;
 
-// Obtener la referencia de la base de datos de los datos del jugador
-const userRef = firebase.database().ref('users/' + userUid);
+    // Obtener la referencia de la base de datos de los datos del jugador
+    const userRef = firebase.database().ref('users/' + userUid);
 
-// Obtener los datos del jugador desde la base de datos
-userRef.once('value', (snapshot) => {
-    const userData = snapshot.val();
+    // Obtener los datos del jugador desde la base de datos
+    userRef.once('value', (snapshot) => {
+        const userData = snapshot.val();
 
-    // Asegúrate de que los datos del jugador estén disponibles y de que tenga items equipados
-    if (userData && userData.equippedItems) {
-        userData.equippedItems.forEach(item => {
-            const imageUrl = item.imageUrl;
-            const itemPosition = item.position;
+        // Asegúrate de que los datos del jugador estén disponibles y de que tenga items equipados
+        if (userData && userData.equippedItems) {
+            userData.equippedItems.forEach(item => {
+                const imageUrl = item.imageUrl;
+                const itemPosition = item.position;
 
-            // Crear la imagen del ítem
-            const itemImg = new Image();
-            itemImg.src = imageUrl;
+                // Crear la imagen del ítem
+                const itemImg = new Image();
+                itemImg.src = imageUrl;
 
-            // Dibujar el ítem cuando la imagen se haya cargado
-            itemImg.onload = () => {
-                // Determinar la posición del ítem y dibujarlo en el canvas
-                switch (itemPosition) {
-                    case "head":
-                        ctx.drawImage(itemImg, p.x - 25, p.y - 50, 50, 50);  // Coloca el ítem en la cabeza
-                        break;
-                    case "torso":
-                        ctx.drawImage(itemImg, p.x - 25, p.y, 50, 50);  // Coloca el ítem en el torso
-                        break;
-                    case "legs":
-                        ctx.drawImage(itemImg, p.x - 25, p.y + 25, 50, 50);  // Coloca el ítem en las piernas
-                        break;
-                    case "weapon":
-                        ctx.drawImage(itemImg, p.x + 15, p.y, 40, 40);  // Coloca el ítem como arma
-                        break;
-                    default:
-                        console.log(`Posición de item desconocida: ${itemPosition}`);
-                }
-            };
-        });
-    }
+                // Dibujar el ítem cuando la imagen se haya cargado
+                itemImg.onload = () => {
+                    // Determinar la posición del ítem y dibujarlo en el canvas
+                    switch (itemPosition) {
+                        case "head":
+                            ctx.drawImage(itemImg, p.x - 25, p.y - 50, 50, 50);  // Coloca el ítem en la cabeza
+                            break;
+                        case "torso":
+                            ctx.drawImage(itemImg, p.x - 25, p.y, 50, 50);  // Coloca el ítem en el torso
+                            break;
+                        case "legs":
+                            ctx.drawImage(itemImg, p.x - 25, p.y + 25, 50, 50);  // Coloca el ítem en las piernas
+                            break;
+                        case "weapon":
+                            ctx.drawImage(itemImg, p.x + 15, p.y, 40, 40);  // Coloca el ítem como arma
+                            break;
+                        default:
+                            console.log(`Posición de item desconocida: ${itemPosition}`);
+                    }
+                };
+            });
+        }
 
-    // Si el jugador tiene una espada equipada, dibujarla
-    if (userData.hasSword) {
-        ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-    }
-});
+        // Si el jugador tiene una espada equipada, dibujarla
+        if (userData.hasSword) {
+            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+        }
+    }); // Aquí falta la llave de cierre para la función `userRef.once`
+} // Aquí falta la llave de cierre para el for loop
 
     // Mostrar errores de Firebase en el canvas
     if (firebaseError) {
