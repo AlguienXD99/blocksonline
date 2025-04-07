@@ -7,7 +7,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script> <!-- Agregada esta línea -->
+    <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; }
         input, textarea, button { display: block; margin: 10px auto; width: 80%; padding: 8px; }
@@ -89,7 +89,7 @@
                 }
 
                 // Verificar si el contenido contiene palabras prohibidas
-                const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");  // Usamos la base de datos en tiempo real
+                const forbiddenWordsRef = firebase.database().ref("forbiddenWords/blockedWords");
                 const snapshot = await forbiddenWordsRef.once("value");
                 const blockedWords = snapshot.val();
                 const blockedWordsArray = Object.keys(blockedWords);
@@ -110,7 +110,7 @@
                     subject: filterText(subject),
                     title: filterText(title),
                     content: filterText(content),
-                    user: user.uid, // Guardamos el UID del usuario
+                    user: user.uid,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     document.getElementById("subject").value = "";
@@ -119,10 +119,10 @@
                 });
             };
 
-            // Consulta de publicaciones, ordenadas por la fecha de creación (más reciente primero)
+            // Consulta de publicaciones ordenadas por fecha (más recientes primero)
             db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
                 const forum = document.getElementById("forum");
-                forum.innerHTML = ""; // Limpiar contenido actual
+                forum.innerHTML = "";  // Limpiar contenido actual
                 snapshot.forEach(async doc => {
                     const data = doc.data();
                     const date = data.timestamp?.toDate() || new Date();
