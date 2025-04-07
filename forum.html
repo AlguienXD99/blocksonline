@@ -34,7 +34,6 @@
 
     <!-- Foro -->
     <div id="forum"></div>
-
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const firebaseConfig = {
@@ -122,10 +121,10 @@
         // Consulta de publicaciones ordenadas por fecha (más recientes primero)
         db.collection("posts").orderBy("timestamp", "desc").onSnapshot(async snapshot => {
             const forum = document.getElementById("forum");
+            forum.innerHTML = ""; // Limpiar contenido actual antes de agregar nuevos posts
 
-            // Limpiar contenido solo si es necesario
-            const postsArray = [];
-            snapshot.forEach(async doc => {
+            // Usamos Promise.all para esperar a que todas las consultas del usuario terminen
+            const postsArray = await Promise.all(snapshot.docs.map(async doc => {
                 const data = doc.data();
                 const date = data.timestamp?.toDate() || new Date();
 
@@ -135,7 +134,7 @@
                 const userData = userSnapshot.val();
                 const userNickname = userData ? userData.nickname : "Usuario desconocido";
 
-                postsArray.push(`
+                return `
                     <div class="post">
                         <strong>${userNickname}</strong><br>
                         <strong>Asunto:</strong> ${data.subject}<br>
@@ -143,10 +142,10 @@
                         <p>${data.content}</p>
                         <div class="timestamp">${date.toLocaleString()}</div>
                     </div>
-                `);
-            });
+                `;
+            }));
 
-            // Agregar los nuevos posts al foro
+            // Agregar los posts al foro de una sola vez
             forum.innerHTML = postsArray.join('');
         });
     });
