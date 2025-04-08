@@ -278,6 +278,128 @@ function updateLeaderboard() {
 
 const speed = 5; // Velocidad constante de movimiento
 
+let playerItems = {}; // Almacena los artículos equipados de los jugadores
+let loadedItemsCount = 0; // Contador para saber cuántos artículos se han cargado
+let totalItemsToLoad = 0; // Número total de artículos que necesitamos cargar
+
+function loadImage(imageUrl) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        
+        img.onload = () => {
+            console.log("Imagen cargada correctamente:", imageUrl);
+            resolve(img);
+        };
+        
+        img.onerror = (error) => {
+            console.error("Error al cargar la imagen:", imageUrl, error);
+            reject(error);
+        };
+
+        img.src = imageUrl;
+    });
+}
+
+function loadEquippedItems(playerId) {
+    const playerRef = db.ref(`users/${playerId}/equippedItems`);
+
+    playerRef.once('value', async (snapshot) => {
+        const equippedItems = snapshot.val();
+        if (equippedItems) {
+            playerItems[playerId] = []; // Asegurar que exista el array del jugador
+            const promises = [];  
+
+            for (let itemKey in equippedItems) {
+                const item = equippedItems[itemKey];
+                if (item.imageUrl) {
+                    const imageUrl = item.imageUrl;
+                    totalItemsToLoad++;
+
+                    // Cargamos la imagen con la promesa
+                    const imgPromise = loadImage(imageUrl)
+                        .then((img) => {
+                            playerItems[playerId].push({
+                                image: img,
+                                position: item.position || 'torso',
+                            });
+                            loadedItemsCount++;
+                        })
+                        .catch((error) => console.error(error)); // Mostrar errores
+
+                    promises.push(imgPromise);
+                }
+            }
+
+            // Esperar a que todas las imágenes se carguen antes de continuar
+            await Promise.all(promises);
+            console.log("Todos los artículos de", playerId, "cargados:", playerItems[playerId]);
+
+            // Asegurar que el juego inicie solo cuando todo esté listo
+            if (loadedItemsCount === totalItemsToLoad) {
+                startGameLoop();
+            }
+        }
+    });
+}
+
+function startGameLoop() {
+    if (!gameLoopStarted) {
+        gameLoopStarted = true;
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+let gameLoopStarted = false;
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calcular la dirección hacia el destino
+    let dx = targetX - player.x;
+    let dy = targetY - player.y;
+    let distance = Math.hypot(dx, dy);
+
+    if (distance > speed) {
+        player.x += (dx / distance) * speed;
+        player.y += (dy / distance) * speed;
+    } else {
+        player.x = targetX;
+        player.y = targetY;
+    }
+
+    for (const id in players) {
+        const p = players[id];
+
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+        ctx.fillStyle = "black";
+        ctx.font = "14px Arial";
+        ctx.fillText(p.name, p.x - 20, p.y - 30);
+        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+        // Dibujar los artículos equipados
+        if (playerItems[id] && playerItems[id].length > 0) {
+            for (let item of playerItems[id]) {
+                if (item.image) {
+                    ctx.drawImage(item.image, p.x - 25, p.y - 25, 50, 50);
+                }
+            }
+        }
+
+        if (p.hasSword) {
+            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+        }
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Cargar los artículos equipados para cada jugador
+for (const id in players) {
+    loadEquippedItems(id);
+}
+
+
 // Actualizar base de datos cada segundo
 setInterval(() => {
     db.ref(`players/${player.id}`).set(player);
