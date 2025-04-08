@@ -175,12 +175,12 @@ auth.onAuthStateChanged(user => {
             db.ref(`players/${player.id}`).remove();
         });
 
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "e") toggleSword();
-            if (e.key === " ") attack();
-        });
-    gameLoop();
-};
+document.addEventListener("keydown", (e) => {
+    if (e.key === "e") toggleSword();
+    if (e.key === " ") attack();
+});
+
+gameLoop(); // Aquí llamas a la función gameLoop() correctamente.
 
 function toggleSword() {
     player.hasSword = !player.hasSword;
