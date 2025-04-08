@@ -146,13 +146,25 @@ let targetX = player.x, targetY = player.y;
 
 auth.onAuthStateChanged(user => {
     if (user) {
+        // Obtiene el ID del usuario
         player.id = user.uid;
-        player.name = user.email.split("@")[0] || "Anónimo";
-        db.ref(`players/${player.id}`).set(player);
+
+        // Obtiene el 'nickname' del usuario desde la base de datos
+        db.ref(`users/${user.uid}/nickname`).once('value', snapshot => {
+            const nickname = snapshot.val(); // El valor del 'nickname'
+            player.name = nickname || user.email.split("@")[0] || "Anónimo"; // Si no hay nickname, usa el email
+
+            // Guarda el jugador en la base de datos bajo la ruta de players
+            db.ref(`players/${player.id}`).set(player);
+        });
+
+        // Actualiza la lista de jugadores en tiempo real
         db.ref("players").on("value", snapshot => {
             players = snapshot.val() || {};
             updateLeaderboard();
         });
+    }
+});
 
         window.addEventListener("mousemove", e => {
             targetX = e.clientX;
