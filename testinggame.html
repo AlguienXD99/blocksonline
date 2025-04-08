@@ -328,21 +328,16 @@ setInterval(() => {
 
 <script>
     document.getElementById("equipButton").addEventListener("click", () => {
-        // Cambia el estado de la espada
         player.hasSword = true;
         db.ref(`players/${player.id}/hasSword`).set(true);
     });
 
     document.getElementById("unequipButton").addEventListener("click", () => {
-        // Cambia el estado de la espada
         player.hasSword = false;
         db.ref(`players/${player.id}/hasSword`).set(false);
     });
 
-    document.getElementById("attackButton").addEventListener("click", () => {
-        // Llama a la función de ataque
-        attack();
-    });
+    document.getElementById("attackButton").addEventListener("click", attack);
 </script>
 
 </body>
