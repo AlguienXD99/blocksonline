@@ -90,6 +90,14 @@ backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta 
 backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
+const starImg = new Image();
+starImg.src = "https://blocksonline.neocities.org/blocksonlinefuturelogo2.png"; // Asegúrate de que el archivo esté en la ubicación correcta
+const star = {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    size: 40
+};
+
 let firebaseError = ""; // Variable para almacenar el error
 
 auth.onAuthStateChanged(user => {
@@ -133,6 +141,8 @@ function gameLoop() {
     console.log("gameLoop ejecutándose...");
     // Dibujar la imagen de fondo
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    // Dibujar la estrella
+    ctx.drawImage(starImg, star.x, star.y, star.size, star.size);
 
     // Suavizar el movimiento
     player.x += (targetX - player.x) * 0.05;
