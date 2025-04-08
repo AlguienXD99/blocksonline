@@ -31,9 +31,9 @@
             top: 500px;
             cursor: pointer;
         }
-    canvas:hover {
-        cursor: url('cursor.png'), auto;
-     }
+        canvas:hover {
+            cursor: url('cursor.png'), auto;
+        }
     </style>
 </head>
 <body>
@@ -42,260 +42,24 @@
 </div>
 
 <style>
-   #gameContainer {
-    background: linear-gradient(to bottom, skyblue 50%, gray 50%); /* Degradado de celeste a gris */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh; /* Toda la pantalla */
-    width: 100vw; /* Todo el ancho */
-
-    /* Corrección de background-image */
-    background-image: url('fondo.png'); 
-    background-repeat: no-repeat;
-    background-size: cover; /* Ajusta la imagen para cubrir todo el contenedor */
-    background-position: center; /* Centra la imagen */
-}
-
+    #gameContainer {
+        background: linear-gradient(to bottom, skyblue 50%, gray 50%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        width: 100vw;
+        background-image: url('fondo.png');
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;
+    }
 </style>
 
 <div id="leaderboard">Leaderboard</div>
 <div id="gui">[E] Equipar/Desequipar Espada | [Espacio] Atacar</div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-
-<script>
-// Configuración Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-  authDomain: "virtualblocks-b7a52.firebaseapp.com",
-  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-  projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-  messagingSenderId: "490618182453",
-  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-
-const canvas = document.getElementById("gameCanvas");
-    
-// Cargar la imagen de fondo
-const backgroundImg = new Image();
-backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta correcta
-backgroundImg.onload = () => {
-    gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
-};
-const starImg = new Image();
-starImg.src = "https://blocksonline.neocities.org/blocksonlinefuturelogo2.png"; // Asegúrate de que el archivo esté en la ubicación correcta
-const star = {
-    x: 469, // Posición en X
-    y: 317, // Posición en Y
-    width: 160, // Ancho de la imagen
-    height: 60 // Alto de la imagen
-};
-
-let firebaseError = ""; // Variable para almacenar el error
-
-auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;
-        player.name = user.email.split("@")[0] || "Anónimo";
-        db.ref(`players/${player.id}`).set(player).catch(error => {
-            firebaseError = error.message; // Captura errores de autenticación
-        });
-
-        db.ref("players").on("value", snapshot => {
-            players = snapshot.val() || {};
-            updateLeaderboard();
-        }, error => {
-            firebaseError = error.message; // Captura errores de lectura de la base de datos
-        });
-
-        window.addEventListener("mousemove", e => {
-            targetX = e.clientX;
-            targetY = e.clientY;
-        });
-
-        window.addEventListener("beforeunload", () => {
-            db.ref(`players/${player.id}`).remove().catch(error => {
-                firebaseError = error.message; // Captura errores al eliminar datos
-            });
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "e") toggleSword();
-            if (e.key === " ") attack();
-        });
-
-        gameLoop();
-    } else {
-        firebaseError = "No se ha iniciado sesión.";
-    }
-});
-
-function gameLoop() {
-    console.log("gameLoop ejecutándose...");
-    // Dibujar la imagen de fondo
-    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-    // Dibujar la estrella
-    ctx.drawImage(starImg, star.x, star.y, star.width, star.height);
-
-    // Suavizar el movimiento
-    player.x += (targetX - player.x) * 0.05;
-    player.y += (targetY - player.y) * 0.05;
-
-    for (const id in players) {
-        const p = players[id];
-
-        // Dibujar jugador
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-        // Dibujar espada si la tiene equipada
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-        }
-    }
-
-    // Mostrar errores de Firebase en el canvas
-    if (firebaseError) {
-        ctx.fillStyle = "red";
-        ctx.font = "16px Arial";
-        ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
-    }
-
-    requestAnimationFrame(gameLoop);
-}
-
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// Cargar imágenes
-const playerImg = new Image();
-playerImg.src = "player.png"; // Imagen del jugador
-const swordImg = new Image();
-swordImg.src = "https://tr.rbxcdn.com/463a028944c35811cdcd881b3a3a444b/420/420/Decal/Png"; // Imagen de la espada
-
-// Jugador local
-let player = { 
-    id: null, 
-    x: Math.random() * canvas.width, 
-    y: Math.random() * canvas.height, 
-    size: 50, 
-    name: "", 
-    health: 100, 
-    hasSword: false 
-};
-
-let players = {};
-let targetX = player.x, targetY = player.y;
-
-auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;
-        
-        // Obtenemos el nickname desde Firebase
-        db.ref(`users/${user.uid}/nickname`).once("value", snapshot => {
-            const nickname = snapshot.val() || "Anónimo"; // Si no hay nickname, usamos "Anónimo"
-            player.name = nickname;
-
-            // Guardamos el jugador en la base de datos
-            db.ref(`players/${player.id}`).set(player).catch(error => {
-                firebaseError = error.message; // Captura errores de autenticación
-            });
-        });
-
-        db.ref("players").on("value", snapshot => {
-            players = snapshot.val() || {};
-            updateLeaderboard();
-        }, error => {
-            firebaseError = error.message; // Captura errores de lectura de la base de datos
-        });
-
-        window.addEventListener("mousemove", e => {
-            targetX = e.clientX;
-            targetY = e.clientY;
-        });
-
-        window.addEventListener("beforeunload", () => {
-            db.ref(`players/${player.id}`).remove().catch(error => {
-                firebaseError = error.message; // Captura errores al eliminar datos
-            });
-        });
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "e") toggleSword();
-            if (e.key === " ") attack();
-        });
-
-        gameLoop();
-    } else {
-        firebaseError = "No se ha iniciado sesión.";
-    }
-});
-
-function toggleSword() {
-    player.hasSword = !player.hasSword;
-    db.ref(`players/${player.id}/hasSword`).set(player.hasSword);
-}
-
-function attack() {
-    if (!player.hasSword) return;
-    
-    for (const id in players) {
-        if (id !== player.id) {
-            const enemy = players[id];
-            const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
-            if (distance < 60) { // Rango de ataque
-                let newHealth = Math.max(0, enemy.health - 20);
-                db.ref(`players/${id}/health`).set(newHealth);
-
-                if (newHealth === 0) {
-                    // Respawn del jugador muerto
-                    db.ref(`players/${id}`).set({ 
-                        id: id, 
-                        x: Math.random() * canvas.width, 
-                        y: Math.random() * canvas.height, 
-                        size: 50, 
-                        name: enemy.name, 
-                        health: 100, 
-                        hasSword: false 
-                    });
-                }
-            }
-        }
-    }
-}
-
-function updateLeaderboard() {
-    const leaderboard = document.getElementById("leaderboard");
-    leaderboard.innerHTML = "<b>Leaderboard</b><br>";
-    for (const id in players) {
-        const p = players[id];
-        leaderboard.innerHTML += `${p.name}: ${p.health} HP<br>`;
-    }
-}
-
-const speed = 5; // Velocidad constante de movimiento
-
-// Actualizar base de datos cada segundo
-setInterval(() => {
-    db.ref(`players/${player.id}`).set(player);
-}, 1000);
-</script>
-
-    <div id="controls">
+<div id="controls">
     <button id="equipButton">Equipar Espada</button>
     <button id="unequipButton">Desequipar Espada</button>
     <button id="attackButton">Atacar</button>
@@ -310,7 +74,7 @@ setInterval(() => {
         display: flex;
         gap: 10px;
     }
-    
+
     button {
         background-color: black;
         color: white;
@@ -320,31 +84,207 @@ setInterval(() => {
         cursor: pointer;
         font-size: 16px;
     }
-    
+
     button:hover {
         background-color: gray;
     }
 </style>
 
 <script>
-    document.getElementById("equipButton").addEventListener("click", () => {
-        if (!player.hasSword) {
-            player.hasSword = true;
-            db.ref(`players/${player.id}/hasSword`).set(true);
+    // Configuración Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+        authDomain: "virtualblocks-b7a52.firebaseapp.com",
+        databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+        projectId: "virtualblocks-b7a52",
+        storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+        messagingSenderId: "490618182453",
+        appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    const canvas = document.getElementById("gameCanvas");
+    
+    // Cargar la imagen de fondo
+    const backgroundImg = new Image();
+    backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta correcta
+    backgroundImg.onload = () => {
+        gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
+    };
+    const starImg = new Image();
+    starImg.src = "https://blocksonline.neocities.org/blocksonlinefuturelogo2.png"; // Asegúrate de que el archivo esté en la ubicación correcta
+    const star = {
+        x: 469, // Posición en X
+        y: 317, // Posición en Y
+        width: 160, // Ancho de la imagen
+        height: 60 // Alto de la imagen
+    };
+
+    let firebaseError = ""; // Variable para almacenar el error
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            player.id = user.uid;
+            player.name = user.email.split("@")[0] || "Anónimo";
+            db.ref(`players/${player.id}`).set(player).catch(error => {
+                firebaseError = error.message; // Captura errores de autenticación
+            });
+
+            db.ref("players").on("value", snapshot => {
+                players = snapshot.val() || {};
+                updateLeaderboard();
+            }, error => {
+                firebaseError = error.message; // Captura errores de lectura de la base de datos
+            });
+
+            window.addEventListener("mousemove", e => {
+                targetX = e.clientX;
+                targetY = e.clientY;
+            });
+
+            window.addEventListener("beforeunload", () => {
+                db.ref(`players/${player.id}`).remove().catch(error => {
+                    firebaseError = error.message; // Captura errores al eliminar datos
+                });
+            });
+
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "e") toggleSword();
+                if (e.key === " ") attack();
+            });
+
+            gameLoop();
+        } else {
+            firebaseError = "No se ha iniciado sesión.";
         }
+    });
+
+    function gameLoop() {
+        console.log("gameLoop ejecutándose...");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Dibujar la imagen de fondo
+        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+        // Dibujar la estrella
+        ctx.drawImage(starImg, star.x, star.y, star.width, star.height);
+
+        // Suavizar el movimiento
+        player.x += (targetX - player.x) * 0.05;
+        player.y += (targetY - player.y) * 0.05;
+
+        for (const id in players) {
+            const p = players[id];
+
+            // Dibujar jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.name, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+            // Dibujar espada si la tiene equipada
+            if (p.hasSword) {
+                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+            }
+        }
+
+        // Mostrar errores de Firebase en el canvas
+        if (firebaseError) {
+            ctx.fillStyle = "red";
+            ctx.font = "16px Arial";
+            ctx.fillText(`Error: ${firebaseError}`, 10, canvas.height - 20);
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Cargar imágenes
+    const playerImg = new Image();
+    playerImg.src = "player.png"; // Imagen del jugador
+    const swordImg = new Image();
+    swordImg.src = "https://tr.rbxcdn.com/463a028944c35811cdcd881b3a3a444b/420/420/Decal/Png"; // Imagen de la espada
+
+    // Jugador local
+    let player = { 
+        id: null, 
+        x: Math.random() * canvas.width, 
+        y: Math.random() * canvas.height, 
+        size: 50, 
+        name: "", 
+        health: 100, 
+        hasSword: false 
+    };
+
+    let players = {};
+    let targetX = player.x, targetY = player.y;
+
+    function toggleSword() {
+        player.hasSword = !player.hasSword;
+        db.ref(`players/${player.id}/hasSword`).set(player.hasSword);
+    }
+
+    function attack() {
+        if (!player.hasSword) return;
+        
+        for (const id in players) {
+            if (id !== player.id) {
+                const enemy = players[id];
+                const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (distance < 60) { // Rango de ataque
+                    let newHealth = Math.max(0, enemy.health - 20);
+                    db.ref(`players/${id}/health`).set(newHealth);
+
+                    if (newHealth === 0) {
+                        // Respawn del jugador muerto
+                        db.ref(`players/${id}`).set({ 
+                            id: id, 
+                            x: Math.random() * canvas.width, 
+                            y: Math.random() * canvas.height, 
+                            size: 50, 
+                            name: enemy.name, 
+                            health: 100, 
+                            hasSword: false 
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    function updateLeaderboard() {
+        const leaderboard = document.getElementById("leaderboard");
+        leaderboard.innerHTML = "<b>Leaderboard</b><br>";
+        for (const id in players) {
+            const p = players[id];
+            leaderboard.innerHTML += `${p.name}: ${p.health} HP<br>`;
+        }
+    }
+
+    const speed = 5; // Velocidad constante de movimiento
+
+    // Actualizar base de datos cada segundo
+    setInterval(() => {
+        db.ref(`players/${player.id}`).set(player);
+    }, 1000);
+
+    // Funciones de botones
+    document.getElementById("equipButton").addEventListener("click", () => {
+        player.hasSword = true;
+        db.ref(`players/${player.id}/hasSword`).set(true);
     });
 
     document.getElementById("unequipButton").addEventListener("click", () => {
-        if (player.hasSword) {
-            player.hasSword = false;
-            db.ref(`players/${player.id}/hasSword`).set(false);
-        }
+        player.hasSword = false;
+        db.ref(`players/${player.id}/hasSword`).set(false);
     });
 
-    document.getElementById("attackButton").addEventListener("click", () => {
-        attack(); // Ejecutar la función de ataque al hacer clic
-    });
+    document.getElementById("attackButton").addEventListener("click", attack);
 </script>
-
 </body>
 </html>
