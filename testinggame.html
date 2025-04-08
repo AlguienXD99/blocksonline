@@ -223,9 +223,8 @@ function updateLeaderboard() {
         leaderboard.innerHTML += `${p.name}: ${p.health} HP<br>`;
     }
 }
-
-const speed = 5; // Velocidad constante de movimiento
-
+const speed = 5; // Asegúrate de que 'speed' esté declarado antes de cualquier uso
+    
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
