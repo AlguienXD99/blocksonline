@@ -179,9 +179,8 @@ auth.onAuthStateChanged(user => {
             if (e.key === "e") toggleSword();
             if (e.key === " ") attack();
         });
-
-        gameLoop();
-});
+    gameLoop();
+};
 
 function toggleSword() {
     player.hasSword = !player.hasSword;
