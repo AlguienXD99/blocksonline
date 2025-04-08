@@ -143,7 +143,7 @@ function gameLoop() {
     // Dibujar la imagen de fondo
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
     // Dibujar la estrella
-    ctx.drawImage(starImg, star.x, star.y, star.size, star.size);
+    ctx.drawImage(starImg, star.x, star.y, star.width, star.height);
 
     // Suavizar el movimiento
     player.x += (targetX - player.x) * 0.05;
