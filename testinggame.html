@@ -35,6 +35,12 @@
             cursor: url('cursor.png'), auto;
         }
     </style>
+
+    <!-- Importar Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.8.3/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.8.3/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.8.3/firebase-auth.js"></script>
+
 </head>
 <body>
 <div id="gameContainer">
@@ -101,6 +107,8 @@
         messagingSenderId: "490618182453",
         appId: "1:490618182453:web:93385819c7ff08537d8a7c"
     };
+
+    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
