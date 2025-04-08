@@ -328,16 +328,22 @@ setInterval(() => {
 
 <script>
     document.getElementById("equipButton").addEventListener("click", () => {
-        player.hasSword = true;
-        db.ref(`players/${player.id}/hasSword`).set(true);
+        if (!player.hasSword) {
+            player.hasSword = true;
+            db.ref(`players/${player.id}/hasSword`).set(true);
+        }
     });
 
     document.getElementById("unequipButton").addEventListener("click", () => {
-        player.hasSword = false;
-        db.ref(`players/${player.id}/hasSword`).set(false);
+        if (player.hasSword) {
+            player.hasSword = false;
+            db.ref(`players/${player.id}/hasSword`).set(false);
+        }
     });
 
-    document.getElementById("attackButton").addEventListener("click", attack);
+    document.getElementById("attackButton").addEventListener("click", () => {
+        attack(); // Ejecutar la función de ataque al hacer clic
+    });
 </script>
 
 </body>
