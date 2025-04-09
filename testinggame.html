@@ -92,20 +92,22 @@ backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
 
+// Cargar la configuración del usuario desde Firebase Realtime Database
 async function loadUserConfig(userUID) {
     try {
-        // Obtiene la configuración del usuario desde Firebase RTDB
-        const userRef = firebase.database().ref(`users/${userUID}`);
-        const snapshot = await userRef.once('value');  // Obtiene los datos una sola vez
+        // Referencia a la base de datos en Firebase
+        const userRef = firebase.database().ref('users/' + userUID); // Ajusta la ruta si es necesario
+        const snapshot = await userRef.once('value');  // Obtén una sola lectura
 
-        if (!snapshot.exists()) {
-            console.warn(`No se encontraron datos para el usuario: ${userUID}`);
+        // Verifica si los datos existen para este UID
+        if (snapshot.exists()) {
+            return snapshot.val();  // Devuelve los datos de configuración
+        } else {
+            console.warn(`No se encontraron datos para el usuario ${userUID}`);
             return null;
         }
-
-        return snapshot.val();  // Devuelve los datos del usuario
     } catch (error) {
-        console.error("Error al obtener la configuración del usuario:", error);
+        console.error("Error al cargar la configuración del usuario desde Firebase:", error);
         return null;
     }
 }
@@ -128,7 +130,7 @@ async function gameLoop() {
                 continue;
             }
 
-            // Cargar la configuración del usuario (avatar, ítems, etc.)
+            // Cargar la configuración del usuario (avatar, ítems, etc.) desde Firebase
             const userConfig = await loadUserConfig(p.userUID);
             if (!userConfig) {
                 console.warn(`No se pudo cargar la configuración del usuario ${p.userUID}.`);
@@ -184,7 +186,6 @@ async function gameLoop() {
         console.error("Error en gameLoop:", error);
     }
 }
-
     
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
