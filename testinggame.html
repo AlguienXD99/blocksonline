@@ -103,8 +103,38 @@ function gameLoop() {
     for (const id in players) {
         const p = players[id];
 
-        // Dibujar jugador
+        // Obtener la configuración del avatar desde el JSON utilizando el userUID
+        const userConfig = users[p.userUID]; // Asegúrate de que 'users' esté definido
+        const avatarConfig = userConfig.avatarConfig; // Obtener la configuración del avatar del jugador
+
+        // Dibujar el avatar del jugador
         ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+        // Función para cargar los ítems equipados
+        const loadEquippedItem = (itemKey) => {
+            const item = avatarConfig.equippedItems[itemKey];
+            if (item && item.imageUrl) {
+                // Dibujar el ítem en la posición indicada
+                const position = item.position;
+                const imageUrl = item.imageUrl;
+
+                // Cargar la imagen según la ruta proporcionada
+                const img = new Image();
+                img.src = imageUrl;
+
+                img.onload = function() {
+                    // Definir la posición de cada ítem dependiendo de la "position"
+                    if (position === 'torso') {
+                        // Ajuste de posición del torso (puedes cambiar estos valores según sea necesario)
+                        ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
+                    }
+                    // Puedes agregar más condiciones para otras posiciones (si las hay)
+                };
+            }
+        };
+
+        // Verificar los ítems equipados: primero item1, luego item2, etc.
+        loadEquippedItem("item1") || loadEquippedItem("item2");
 
         // Dibujar nombre y vida
         ctx.fillStyle = "black";
