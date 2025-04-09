@@ -123,10 +123,11 @@ auth.onAuthStateChanged(user => {
         items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
             db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
                 const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
-                console.log(`${item} position: ${itemData.position}`);  // Accedes a la propiedad 'position'
-                console.log(`${item} imageUrl: ${itemData.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
-                const itemImage = itemData.imageUrl;
-                const position = itemData.position; // Por ejemplo, 'torso'
+                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
+                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
+                
+                const itemImage = itemData?.imageUrl;
+                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
                 
                 // Cargar la imagen del ítem
                 const img = new Image();
@@ -135,10 +136,18 @@ auth.onAuthStateChanged(user => {
                 img.onload = function() {
                     // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
                     if (position === 'torso') {
-                        // Por ejemplo, dibujar sobre el torso del jugador
-                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50); // Ajusta las coordenadas según lo necesites
+                        // Ejemplo de posición para el torso
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'head') {
+                        // Posición para la cabeza
+                        ctx.drawImage(img, player.x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'legs') {
+                        // Posición para las piernas
+                        ctx.drawImage(img, player.x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else {
+                        // Posición por defecto si no se reconoce
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
                     }
-                    // Puedes agregar más condiciones para otras posiciones como 'head', 'legs', etc.
                 };
             });
         });
@@ -183,7 +192,7 @@ async function gameLoop() {
                 const item = equippedItems[itemKey];
 
                 if (item && item.imageUrl) {
-                    const position = item.position;
+                    const position = item.position || 'torso';  // Posición por defecto si no se encuentra 'position'
                     const imageUrl = item.imageUrl;
 
                     // Cargar la imagen del ítem
@@ -194,8 +203,14 @@ async function gameLoop() {
                         // Definir la posición de cada ítem dependiendo de la "position"
                         if (position === 'torso') {
                             ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
+                        } else if (position === 'head') {
+                            ctx.drawImage(img, p.x - 25, p.y - 70, 50, 50);  // Posición para la cabeza
+                        } else if (position === 'legs') {
+                            ctx.drawImage(img, p.x - 25, p.y + 30, 50, 50);  // Posición para las piernas
+                        } else {
+                            // Posición por defecto si no se reconoce
+                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ajusta según lo necesites
                         }
-                        // Puedes agregar más posiciones para otros tipos de ítems si es necesario
                     };
                 }
             }
