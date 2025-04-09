@@ -199,33 +199,17 @@ async function gameLoop() {
                     const img = new Image();
                     img.src = imageUrl;
 
-                    img.onload = function() {
-                        // Definir la posición de cada ítem dependiendo de la "position"
-                        if (position === 'torso') {
-                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
-                        } else if (position === 'head') {
-                            ctx.drawImage(img, p.x - 25, p.y - 70, 50, 50);  // Posición para la cabeza
-                        } else if (position === 'legs') {
-                            ctx.drawImage(img, p.x - 25, p.y + 30, 50, 50);  // Posición para las piernas
-                        } else {
-                            // Posición por defecto si no se reconoce
-                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ajusta según lo necesites
-                        }
-                    };
-                }
-            }
+                    // Dibujar nombre y vida
+                    ctx.fillStyle = "black";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(p.name, p.x - 20, p.y - 30);
+                    ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-            // Dibujar nombre y vida
-            ctx.fillStyle = "black";
-            ctx.font = "14px Arial";
-            ctx.fillText(p.name, p.x - 20, p.y - 30);
-            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-            // Dibujar espada si la tiene equipada
-            if (p.hasSword) {
-                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-            }
-        }
+                    // Dibujar espada si la tiene equipada
+                    if (p.hasSword) {
+                       ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+                     }
+                  }
 
         requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
     } catch (error) {
