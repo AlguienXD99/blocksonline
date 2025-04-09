@@ -100,48 +100,51 @@ function gameLoop() {
     player.x += (targetX - player.x) * 0.1;
     player.y += (targetY - player.y) * 0.1;
 
-// Obtener datos de los usuarios desde Firebase RTDB
-firebase.database().ref("users").once("value", (snapshot) => {
-    const usersData = snapshot.val(); // Contiene todos los usuarios
+    // Obtener datos de los usuarios desde Firebase RTDB
+    firebase.database().ref("users").once("value").then((snapshot) => {
+        const usersData = snapshot.val(); // Contiene todos los usuarios
 
-    for (const id in players) {
-        const p = players[id];
+        for (const id in players) {
+            const p = players[id];
 
-        // Verificar si el usuario existe en la base de datos "users"
-        const userData = usersData[id]; // Buscar datos en "users"
-        let avatarUrl = null;
+            // Verificar si el usuario existe en la base de datos "users"
+            const userData = usersData?.[id]; // Evita errores si no existe el usuario
+            let avatarUrl = null;
 
-        if (userData?.avatarConfig?.equippedItems?.item1?.imageUrl) {
-            avatarUrl = userData.avatarConfig.equippedItems.item1.imageUrl;
-        } else if (userData?.avatarConfig?.equippedItems?.item2?.imageUrl) {
-            avatarUrl = userData.avatarConfig.equippedItems.item2.imageUrl;
-        } else if (userData?.avatarConfig?.equippedItems?.item3?.imageUrl) {
-            avatarUrl = userData.avatarConfig.equippedItems.item3.imageUrl;
+            if (userData?.avatarConfig?.equippedItems?.item1?.imageUrl) {
+                avatarUrl = userData.avatarConfig.equippedItems.item1.imageUrl;
+            } else if (userData?.avatarConfig?.equippedItems?.item2?.imageUrl) {
+                avatarUrl = userData.avatarConfig.equippedItems.item2.imageUrl;
+            } else if (userData?.avatarConfig?.equippedItems?.item3?.imageUrl) {
+                avatarUrl = userData.avatarConfig.equippedItems.item3.imageUrl;
+            }
+
+            // Dibujar el avatar si hay una imagen válida
+            if (avatarUrl) {
+                const avatarImg = new Image();
+                avatarImg.src = avatarUrl;
+                avatarImg.onload = () => {
+                    ctx.drawImage(avatarImg, p.x - 25, p.y - 25, 50, 50);
+                };
+            }
+
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.name, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+            // Dibujar espada si la tiene equipada
+            if (p.hasSword) {
+                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+            }
         }
-
-        // Dibujar el avatar si hay una imagen válida
-        if (avatarUrl) {
-            const avatarImg = new Image();
-            avatarImg.src = avatarUrl;
-            avatarImg.onload = () => {
-                ctx.drawImage(avatarImg, p.x - 25, p.y - 25, 50, 50);
-            };
-        }
-
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-        // Dibujar espada si la tiene equipada
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-        }
-    }
+    }).catch((error) => {
+        console.error("Error al obtener datos de Firebase:", error);
+    });
 
     requestAnimationFrame(gameLoop);
-});
+}
 
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
