@@ -93,76 +93,98 @@ backgroundImg.onload = () => {
 };
 
 async function loadUserConfig(userUID) {
-    // Obtiene la configuración del usuario desde Firebase RTDB
-    const userRef = firebase.database().ref(`users/${userUID}`);
-    const snapshot = await userRef.once('value');  // Obtiene los datos una sola vez
-    return snapshot.val();  // Devuelve los datos del usuario
+    try {
+        // Obtiene la configuración del usuario desde Firebase RTDB
+        const userRef = firebase.database().ref(`users/${userUID}`);
+        const snapshot = await userRef.once('value');  // Obtiene los datos una sola vez
+
+        if (!snapshot.exists()) {
+            console.warn(`No se encontraron datos para el usuario: ${userUID}`);
+            return null;
+        }
+
+        return snapshot.val();  // Devuelve los datos del usuario
+    } catch (error) {
+        console.error("Error al obtener la configuración del usuario:", error);
+        return null;
+    }
 }
 
 async function gameLoop() {
-    // Dibujar la imagen de fondo
-    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    try {
+        // Dibujar la imagen de fondo
+        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
-    // Suavizar el movimiento
-    player.x += (targetX - player.x) * 0.1;
-    player.y += (targetY - player.y) * 0.1;
+        // Suavizar el movimiento
+        player.x += (targetX - player.x) * 0.1;
+        player.y += (targetY - player.y) * 0.1;
 
-    for (const id in players) {
-        const p = players[id];
+        for (const id in players) {
+            const p = players[id];
 
-        // Cargar la configuración del usuario (avatar, ítems, etc.)
-        const userConfig = await loadUserConfig(p.userUID);
-        const equippedItems = userConfig.equippedItems; // Obtener los ítems equipados
+            // Verificar que el usuario tiene un UID válido
+            if (!p.userUID) {
+                console.warn(`Jugador ${id} no tiene un UID asignado.`);
+                continue;
+            }
 
-        // Dibujar el avatar del jugador
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+            // Cargar la configuración del usuario (avatar, ítems, etc.)
+            const userConfig = await loadUserConfig(p.userUID);
+            if (!userConfig) {
+                console.warn(`No se pudo cargar la configuración del usuario ${p.userUID}.`);
+                continue;
+            }
 
-        // Verificar los ítems equipados: primero item1, luego item2, luego item3
-        let itemFound = false;
+            const equippedItems = userConfig.equippedItems || {}; // Obtener los ítems equipados
 
-        // Buscar en item1, item2, y item3
-        for (let i = 1; i <= 3; i++) {
-            const itemKey = `item${i}`;
-            const item = equippedItems ? equippedItems[itemKey] : null;
+            // Dibujar el avatar del jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-            if (item && item.imageUrl) {
-                const position = item.position;
-                const imageUrl = item.imageUrl;
+            // Verificar los ítems equipados: primero item1, luego item2, luego item3
+            let itemFound = false;
 
-                // Cargar la imagen según la ruta proporcionada
-                const img = new Image();
-                img.src = imageUrl;
+            for (let i = 1; i <= 3; i++) {
+                const itemKey = `item${i}`;
+                const item = equippedItems[itemKey];
 
-                img.onload = function() {
-                    // Definir la posición de cada ítem dependiendo de la "position"
-                    if (position === 'torso') {
-                        // Ajuste de posición del torso (puedes cambiar estos valores según sea necesario)
-                        ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
-                    }
-                    // Puedes agregar más condiciones para otras posiciones (si las hay)
-                };
+                if (item && item.imageUrl) {
+                    const position = item.position;
+                    const imageUrl = item.imageUrl;
 
-                itemFound = true;
-                break;  // Salir del ciclo cuando el primer ítem válido sea encontrado
+                    // Cargar la imagen según la ruta proporcionada
+                    const img = new Image();
+                    img.src = imageUrl;
+
+                    img.onload = function() {
+                        // Definir la posición de cada ítem dependiendo de la "position"
+                        if (position === 'torso') {
+                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
+                        }
+                    };
+
+                    itemFound = true;
+                    break;  // Salir del ciclo cuando el primer ítem válido sea encontrado
+                }
+            }
+
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.name, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+            // Dibujar espada si la tiene equipada
+            if (p.hasSword) {
+                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
         }
 
-        // Si no se encontró ningún ítem, no se dibuja nada más
-
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-        // Dibujar espada si la tiene equipada
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-        }
+        requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
+    } catch (error) {
+        console.error("Error en gameLoop:", error);
     }
-
-    requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
 }
+
     
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
