@@ -92,7 +92,14 @@ backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
 
-function gameLoop() {
+async function loadUserConfig(userUID) {
+    // Obtiene la configuración del usuario desde Firebase RTDB
+    const userRef = firebase.database().ref(`users/${userUID}`);
+    const snapshot = await userRef.once('value');  // Obtiene los datos una sola vez
+    return snapshot.val();  // Devuelve los datos del usuario
+}
+
+async function gameLoop() {
     // Dibujar la imagen de fondo
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
@@ -103,18 +110,22 @@ function gameLoop() {
     for (const id in players) {
         const p = players[id];
 
-        // Obtener la configuración del avatar desde el JSON utilizando el userUID
-        const userConfig = users[p.userUID]; // Asegúrate de que 'users' esté definido
-        const avatarConfig = userConfig.avatarConfig; // Obtener la configuración del avatar del jugador
+        // Cargar la configuración del usuario (avatar, ítems, etc.)
+        const userConfig = await loadUserConfig(p.userUID);
+        const equippedItems = userConfig.equippedItems; // Obtener los ítems equipados
 
         // Dibujar el avatar del jugador
         ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-        // Función para cargar los ítems equipados
-        const loadEquippedItem = (itemKey) => {
-            const item = avatarConfig.equippedItems[itemKey];
+        // Verificar los ítems equipados: primero item1, luego item2, luego item3
+        let itemFound = false;
+
+        // Buscar en item1, item2, y item3
+        for (let i = 1; i <= 3; i++) {
+            const itemKey = `item${i}`;
+            const item = equippedItems ? equippedItems[itemKey] : null;
+
             if (item && item.imageUrl) {
-                // Dibujar el ítem en la posición indicada
                 const position = item.position;
                 const imageUrl = item.imageUrl;
 
@@ -130,11 +141,13 @@ function gameLoop() {
                     }
                     // Puedes agregar más condiciones para otras posiciones (si las hay)
                 };
-            }
-        };
 
-        // Verificar los ítems equipados: primero item1, luego item2, etc.
-        loadEquippedItem("item1") || loadEquippedItem("item2");
+                itemFound = true;
+                break;  // Salir del ciclo cuando el primer ítem válido sea encontrado
+            }
+        }
+
+        // Si no se encontró ningún ítem, no se dibuja nada más
 
         // Dibujar nombre y vida
         ctx.fillStyle = "black";
@@ -148,7 +161,7 @@ function gameLoop() {
         }
     }
 
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
 }
     
 const ctx = canvas.getContext("2d");
