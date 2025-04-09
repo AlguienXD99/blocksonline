@@ -111,6 +111,28 @@ async function loadUserConfig(userUID) {
         return null;
     }
 }
+    
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
+        
+        // Array de los posibles ítems (item1, item2, item3, ...)
+        const items = ['item1', 'item2', 'item3'];
+        
+        // Iteramos sobre los ítems
+        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
+            db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
+                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
+                console.log(`${item} position: ${itemData.position}`);  // Accedes a la propiedad 'position'
+                console.log(`${item} imageUrl: ${itemData.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
+                const itemImage = itemData.imageUrl;
+                // Puedes hacer algo con esos datos, como asignarlos al jugador o mostrar en la UI
+            });
+        });
+
+        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
+    }
+});
 
 async function gameLoop() {
     try {
@@ -160,7 +182,7 @@ async function gameLoop() {
                     img.onload = function() {
                         // Definir la posición de cada ítem dependiendo de la "position"
                         if (position === 'torso') {
-                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
+                            ctx.drawImage(itemImage, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
                         }
                     };
 
