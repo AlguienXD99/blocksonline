@@ -126,7 +126,20 @@ auth.onAuthStateChanged(user => {
                 console.log(`${item} position: ${itemData.position}`);  // Accedes a la propiedad 'position'
                 console.log(`${item} imageUrl: ${itemData.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
                 const itemImage = itemData.imageUrl;
-                // Puedes hacer algo con esos datos, como asignarlos al jugador o mostrar en la UI
+                const position = itemData.position; // Por ejemplo, 'torso'
+                
+                // Cargar la imagen del ítem
+                const img = new Image();
+                img.src = itemImage;
+
+                img.onload = function() {
+                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
+                    if (position === 'torso') {
+                        // Por ejemplo, dibujar sobre el torso del jugador
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50); // Ajusta las coordenadas según lo necesites
+                    }
+                    // Puedes agregar más condiciones para otras posiciones como 'head', 'legs', etc.
+                };
             });
         });
 
@@ -165,8 +178,6 @@ async function gameLoop() {
             ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
             // Verificar los ítems equipados: primero item1, luego item2, luego item3
-            let itemFound = false;
-
             for (let i = 1; i <= 3; i++) {
                 const itemKey = `item${i}`;
                 const item = equippedItems[itemKey];
@@ -175,19 +186,17 @@ async function gameLoop() {
                     const position = item.position;
                     const imageUrl = item.imageUrl;
 
-                    // Cargar la imagen según la ruta proporcionada
+                    // Cargar la imagen del ítem
                     const img = new Image();
                     img.src = imageUrl;
 
                     img.onload = function() {
                         // Definir la posición de cada ítem dependiendo de la "position"
                         if (position === 'torso') {
-                            ctx.drawImage(itemImage, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
+                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
                         }
+                        // Puedes agregar más posiciones para otros tipos de ítems si es necesario
                     };
-
-                    itemFound = true;
-                    break;  // Salir del ciclo cuando el primer ítem válido sea encontrado
                 }
             }
 
