@@ -92,7 +92,7 @@ const auth = getAuth(app);
 
         // Función para cargar la data del jugador
         function loadPlayerData() {
-            const playerRef = db.ref('users/' + player.uid);
+            const playerRef = ref('users/' + player.uid);
 
             playerRef.on('value', (snapshot) => {
                 const data = snapshot.val();
