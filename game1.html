@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego 2D Multijugador</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background: #f0f0f0;
+        }
+
+        #leaderboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .player-name {
+            font-size: 14px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="leaderboard"></div>
+
+    <!-- Agregar Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+         apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+         authDomain: "virtualblocks-b7a52.firebaseapp.com",
+         databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+         projectId: "virtualblocks-b7a52",
+         storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+         messagingSenderId: "490618182453",
+         appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+         };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // Selección de Canvas
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Variables para jugadores, items y posición del jugador
+        let players = {};
+        let player = {
+            uid: "player1", // Este será el ID de autenticación del jugador
+            x: 100,
+            y: 100,
+            speed: 2,
+            hp: 100
+        };
+
+        let equippedItems = {}; // Items equipados, de ejemplo
+        let gameStarted = false;
+
+        // Función para conectar al jugador
+        function startGame() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    player.uid = user.uid;
+                    loadPlayerData();
+                    gameLoop();
+                } else {
+                    alert("Por favor inicia sesión.");
+                }
+            });
+        }
+
+        // Función para cargar la data del jugador
+        function loadPlayerData() {
+            const playerRef = db.ref('users/' + player.uid);
+
+            playerRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                const avatarConfig = data.avatarConfig;
+                const nickname = data.nickname;
+
+                // Cargar datos del avatar
+                player.nickname = nickname;
+                equippedItems = data.equippedItems || {};
+
+                // Cargar posiciones
+                db.ref('gameplayers1').child(player.uid).on('value', (snapshot) => {
+                    const playerData = snapshot.val();
+                    player.x = playerData.x || player.x;
+                    player.y = playerData.y || player.y;
+                    player.hp = playerData.hp || 100;
+                });
+            });
+        }
+
+        // Función para actualizar la posición en la base de datos
+        function updatePlayerPosition() {
+            const playerRef = db.ref('gameplayers1/' + player.uid);
+            playerRef.set({
+                x: player.x,
+                y: player.y,
+                hp: player.hp
+            });
+        }
+
+        // Función para dibujar jugadores
+        function drawPlayers() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar todos los jugadores
+            for (let uid in players) {
+                let p = players[uid];
+                ctx.fillStyle = "blue"; // Color de los jugadores
+                ctx.fillRect(p.x, p.y, 50, 50);
+
+                // Mostrar nombres y HP
+                ctx.fillStyle = "white";
+                ctx.font = "14px Arial";
+                ctx.fillText(p.nickname, p.x, p.y - 10);
+                ctx.fillText("HP: " + p.hp, p.x, p.y - 25);
+
+                // Dibujar ítems equipados
+                if (equippedItems) {
+                    // Aquí deberías cargar los ítems del jugador y dibujarlos
+                }
+            }
+        }
+
+        // Función de bucle principal del juego
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+
+            // Actualizar y dibujar los jugadores
+            updatePlayerPosition();
+            drawPlayers();
+        }
+
+        // Mover al jugador con el mouse
+        canvas.addEventListener("mousemove", (event) => {
+            let mouseX = event.clientX;
+            let mouseY = event.clientY;
+
+            let dx = mouseX - player.x;
+            let dy = mouseY - player.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > player.speed) {
+                player.x += dx / dist * player.speed;
+                player.y += dy / dist * player.speed;
+            }
+        });
+
+        // Equipar y desequipar items
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'e') {
+                equipItem('sword'); // Cambiar a "sword" o el item que desees
+            }
+            if (event.key === ' ') {
+                equipItem('turkey_leg'); // Lo mismo aquí, asignar el ítem que desees
+            }
+        });
+
+        // Equipar un item
+        function equipItem(item) {
+            const itemRef = db.ref('equippedItems/' + player.uid);
+            itemRef.update({
+                item1: { imageUrl: item + '.png', position: 'torso' }
+            });
+
+            equippedItems = { ...equippedItems, [item]: true };
+        }
+
+        // Conectar el jugador al iniciar
+        startGame();
+
+    </script>
+</body>
+
+</html>
