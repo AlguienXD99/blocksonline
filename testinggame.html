@@ -186,35 +186,6 @@ async function gameLoop() {
             // Dibujar el avatar del jugador
             ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-            // Verificar los ítems equipados: primero item1, luego item2, luego item3
-            for (let i = 1; i <= 3; i++) {
-                const itemKey = `item${i}`;
-                const item = equippedItems[itemKey];
-
-                if (item && item.imageUrl) {
-                    const position = item.position || 'torso';  // Posición por defecto si no se encuentra 'position'
-                    const imageUrl = item.imageUrl;
-
-                    // Cargar la imagen del ítem
-                    const img = new Image();
-                    img.src = imageUrl;
-
-                    img.onload = function() {
-                        // Definir la posición de cada ítem dependiendo de la "position"
-                        if (position === 'torso') {
-                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ejemplo de posición
-                        } else if (position === 'head') {
-                            ctx.drawImage(img, p.x - 25, p.y - 70, 50, 50);  // Posición para la cabeza
-                        } else if (position === 'legs') {
-                            ctx.drawImage(img, p.x - 25, p.y + 30, 50, 50);  // Posición para las piernas
-                        } else {
-                            // Posición por defecto si no se reconoce
-                            ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ajusta según lo necesites
-                        }
-                    };
-                }
-            }
-
             // Dibujar nombre y vida
             ctx.fillStyle = "black";
             ctx.font = "14px Arial";
@@ -232,7 +203,6 @@ async function gameLoop() {
         console.error("Error en gameLoop:", error);
     }
 }
-    
     
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
