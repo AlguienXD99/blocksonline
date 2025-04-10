@@ -37,13 +37,10 @@
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="leaderboard"></div>
-
-    <!-- Agregar Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-
-    <script>
+    <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
         // Configuración de Firebase
         const firebaseConfig = {
          apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
