@@ -112,41 +112,76 @@ async function loadUserConfig(userUID) {
     }
 }
     
-const equippedItems = {}; // Almacenará las imágenes cargadas
-
 auth.onAuthStateChanged(user => {
     if (user) {
-        player.id = user.uid;
+        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
+        
+        // Array de los posibles ítems (item1, item2, item3, ...)
         const items = ['item1', 'item2', 'item3'];
-
-        items.forEach(item => {
+        
+        // Iteramos sobre los ítems
+        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
             db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
-                const itemData = snapshot.val();
-                if (itemData) {
-                    const img = new Image();
-                    img.src = itemData.imageUrl;
-                    img.onload = function () {
-                        equippedItems[item] = { img, position: itemData.position || 'torso' };
-                    };
-                }
+                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
+                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
+                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
+                
+                const itemImage = itemData?.imageUrl;
+                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
+                
+                // Cargar la imagen del ítem
+                const img = new Image();
+                img.src = itemImage;
+
+                img.onload = function() {
+                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
+                    if (position === 'torso') {
+                        // Ejemplo de posición para el torso
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'head') {
+                        // Posición para la cabeza
+                        ctx.drawImage(img, player.x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'legs') {
+                        // Posición para las piernas
+                        ctx.drawImage(img, player.x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else {
+                        // Posición por defecto si no se reconoce
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
+                    }
+                };
             });
         });
 
-        db.ref(`players/${player.id}`).set(player);
+        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
     }
 });
 
 async function gameLoop() {
     try {
+        // Dibujar la imagen de fondo
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
+        // Suavizar el movimiento
         player.x += (targetX - player.x) * 0.1;
         player.y += (targetY - player.y) * 0.1;
 
         for (const id in players) {
             const p = players[id];
 
-            if (!p.userUID) continue;
+            // Verificar que el usuario tiene un UID válido
+            if (!p.userUID) {
+                console.warn(`Jugador ${id} no tiene un UID asignado.`);
+                continue;
+            }
+
+            // Cargar la configuración del usuario (avatar, ítems, etc.) desde Firebase
+            const userConfig = await loadUserConfig(p.userUID);
+            if (!userConfig) {
+                console.warn(`No se pudo cargar la configuración del usuario ${p.userUID}.`);
+                continue;
+            }
+
+            const equippedItems = userConfig.equippedItems || {}; // Obtener los ítems equipados
 
             // Dibujar el avatar del jugador
             ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
@@ -161,22 +196,9 @@ async function gameLoop() {
             if (p.hasSword) {
                 ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
-
-            // Dibujar ítems equipados
-            for (const key in equippedItems) {
-                const { img, position } = equippedItems[key];
-                if (img) {
-                    let xOffset = 0, yOffset = 0;
-                    if (position === 'torso') yOffset = -50;
-                    if (position === 'head') yOffset = -70;
-                    if (position === 'legs') yOffset = 30;
-                    
-                    ctx.drawImage(img, p.x - 25 + xOffset, p.y + yOffset, 50, 50);
-                }
-            }
         }
 
-        requestAnimationFrame(gameLoop);
+        requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
     } catch (error) {
         console.error("Error en gameLoop:", error);
     }
