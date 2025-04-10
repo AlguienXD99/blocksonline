@@ -38,23 +38,27 @@
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="leaderboard"></div>
     <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-    import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
-        // Configuración de Firebase
-        const firebaseConfig = {
-         apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-         authDomain: "virtualblocks-b7a52.firebaseapp.com",
-         databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-         projectId: "virtualblocks-b7a52",
-         storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-         messagingSenderId: "490618182453",
-         appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-         };
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
+// Configuración de Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+    authDomain: "virtualblocks-b7a52.firebaseapp.com",
+    databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+    projectId: "virtualblocks-b7a52",
+    storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+    messagingSenderId: "490618182453",
+    appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+
+// Inicializa la app
+const app = initializeApp(firebaseConfig);
+
+// Inicializa la base de datos y la autenticación
+const db = getDatabase(app);
+const auth = getAuth(app);
 
         // Selección de Canvas
         const canvas = document.getElementById("gameCanvas");
