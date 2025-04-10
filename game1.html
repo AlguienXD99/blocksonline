@@ -104,7 +104,7 @@ const auth = getAuth(app);
                 equippedItems = data.equippedItems || {};
 
                 // Cargar posiciones
-                db.ref('gameplayers1').child(player.uid).on('value', (snapshot) => {
+                ref('gameplayers1').child(player.uid).on('value', (snapshot) => {
                     const playerData = snapshot.val();
                     player.x = playerData.x || player.x;
                     player.y = playerData.y || player.y;
@@ -115,7 +115,7 @@ const auth = getAuth(app);
 
         // Función para actualizar la posición en la base de datos
         function updatePlayerPosition() {
-            const playerRef = db.ref('gameplayers1/' + player.uid);
+            const playerRef = ref('gameplayers1/' + player.uid);
             playerRef.set({
                 x: player.x,
                 y: player.y,
