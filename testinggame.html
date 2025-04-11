@@ -200,7 +200,7 @@ auth.onAuthStateChanged(user => {
                     // Cargar la imagen del ítem
                     const img = new Image();
                     img.src = itemImage;
-
+                    console.log(itemImage)
                     img.onload = function() {
                         // Dibujar el ítem en el lugar correcto
                         if (position === 'torso') {
