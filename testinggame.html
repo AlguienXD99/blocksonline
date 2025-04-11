@@ -111,7 +111,8 @@ async function loadUserConfig(userUID) {
         return null;
     }
 }
-    
+
+let p = players[id]; 
 auth.onAuthStateChanged(user => {
     if (user) {
         player.id = user.uid;  // Se obtiene el UID del usuario autenticado
