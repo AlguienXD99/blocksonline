@@ -122,7 +122,7 @@ async function gameLoop() {
         player.y += (targetY - player.y) * 0.1;
 
         for (const id in players) {
-            const p = players[id];
+            let p = players[id];
 
             // Verificar que el usuario tiene un UID válido
             if (!p.userUID) {
@@ -185,16 +185,16 @@ auth.onAuthStateChanged(user => {
                     // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
                     if (position === 'torso') {
                         // Ejemplo de posición para el torso
-                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                        ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
                     } else if (position === 'head') {
                         // Posición para la cabeza
-                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                        ctx.drawImage(img, p.x - 25, p.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
                     } else if (position === 'legs') {
                         // Posición para las piernas
-                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                        ctx.drawImage(img, p.x - 25, p.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
                     } else {
                         // Posición por defecto si no se reconoce
-                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y - 50, 50, 50);  // Puedes poner una posición por defecto
+                        ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);  // Puedes poner una posición por defecto
                     }
                 };
             });
