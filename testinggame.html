@@ -161,48 +161,64 @@ async function gameLoop() {
 }
 
 auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
-        plyr = players[player.id];
-        // Array de los posibles ítems (item1, item2, item3, ...)
-        const items = ['item1', 'item2', 'item3'];
-        
-        // Iteramos sobre los ítems
-        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
-            db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
-                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
-                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
-                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
-                
-                const itemImage = itemData?.imageUrl;
-                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
-                
-                // Cargar la imagen del ítem
-                const img = new Image();
-                img.src = itemImage;
+    if (user && user.uid) {
+        // Establecer la referencia a la base de datos para los jugadores
+        const playersRef = db.ref('players');
 
-                img.onload = function() {
-                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
-                    if (position === 'torso') {
-                        // Ejemplo de posición para el torso
-                        ctx.drawImage(img, plyr.x - 25, plyr.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
-                    } else if (position === 'head') {
-                        // Posición para la cabeza
-                        ctx.drawImage(img, plyr.x - 25, plyr.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
-                    } else if (position === 'legs') {
-                        // Posición para las piernas
-                        ctx.drawImage(img, plyr.x - 25, plyr.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
-                    } else {
-                        // Posición por defecto si no se reconoce
-                        ctx.drawImage(img, plyr.x - 25, plyr.y - 50, 50, 50);  // Puedes poner una posición por defecto
-                    }
+        // Establecer el ID del jugador
+        const playerId = user.uid;
+
+        // Acceder a los datos del jugador usando el ID del jugador
+        playersRef.child(playerId).once('value', snapshot => {
+            let plyr = snapshot.val();  // Aquí obtienes los datos del jugador
+
+            if (!plyr) {
+                // Si no existe el jugador, lo inicializamos con datos predeterminados
+                plyr = {
+                    id: playerId,
+                    x: 100,  // Posición predeterminada
+                    y: 100,  // Posición predeterminada
+                    equippedItems: {}  // Inicializamos los ítems equipados como un objeto vacío
                 };
+                playersRef.child(playerId).set(plyr);  // Guardamos el jugador en la base de datos
+            }
+
+            // Ahora tienes los datos del jugador (plyr) y puedes proceder con lo que necesites
+
+            // Ejemplo de cómo cargar los ítems equipados
+            const items = ['item1', 'item2', 'item3'];
+
+            items.forEach(item => {
+                db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
+                    const itemData = snapshot.val();  // Información del ítem
+                    console.log(`${item} position: ${itemData?.position}`);
+                    console.log(`${item} imageUrl: ${itemData?.imageUrl}`);
+
+                    const itemImage = itemData?.imageUrl;
+                    const position = itemData?.position || 'torso';
+
+                    // Cargar la imagen del ítem
+                    const img = new Image();
+                    img.src = itemImage;
+
+                    img.onload = function() {
+                        // Dibujar el ítem en el lugar correcto
+                        if (position === 'torso') {
+                            ctx.drawImage(img, plyr.x - 25, plyr.y - 50, 50, 50);
+                        } else if (position === 'head') {
+                            ctx.drawImage(img, plyr.x - 25, plyr.y - 70, 50, 50);
+                        } else if (position === 'legs') {
+                            ctx.drawImage(img, plyr.x - 25, plyr.y + 30, 50, 50);
+                        } else {
+                            ctx.drawImage(img, plyr.x - 25, plyr.y - 50, 50, 50);  // Posición por defecto
+                        }
+                    };
+                });
             });
         });
-
-        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
     }
 });
+
     
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
