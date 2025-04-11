@@ -163,7 +163,7 @@ async function gameLoop() {
 auth.onAuthStateChanged(user => {
     if (user) {
         player.id = user.uid;  // Se obtiene el UID del usuario autenticado
-        plyr = players[id];
+        plyr = players[player.id];
         // Array de los posibles ítems (item1, item2, item3, ...)
         const items = ['item1', 'item2', 'item3'];
         
