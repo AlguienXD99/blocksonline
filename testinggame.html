@@ -137,16 +137,16 @@ auth.onAuthStateChanged(user => {
                     // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
                     if (position === 'torso') {
                         // Ejemplo de posición para el torso
-                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                        ctx.drawImage(img, p.x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
                     } else if (position === 'head') {
                         // Posición para la cabeza
-                        ctx.drawImage(img, player.x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                        ctx.drawImage(img, p.x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
                     } else if (position === 'legs') {
                         // Posición para las piernas
-                        ctx.drawImage(img, player.x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                        ctx.drawImage(img, p.x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
                     } else {
                         // Posición por defecto si no se reconoce
-                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
+                        ctx.drawImage(img, p.x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
                     }
                 };
             });
