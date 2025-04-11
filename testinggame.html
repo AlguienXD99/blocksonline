@@ -112,50 +112,6 @@ async function loadUserConfig(userUID) {
     }
 }
 
-auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
-        
-        // Array de los posibles ítems (item1, item2, item3, ...)
-        const items = ['item1', 'item2', 'item3'];
-        
-        // Iteramos sobre los ítems
-        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
-            db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
-                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
-                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
-                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
-                
-                const itemImage = itemData?.imageUrl;
-                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
-                
-                // Cargar la imagen del ítem
-                const img = new Image();
-                img.src = itemImage;
-
-                img.onload = function() {
-                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
-                    if (position === 'torso') {
-                        // Ejemplo de posición para el torso
-                        ctx.drawImage(img, players[user.uid].x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
-                    } else if (position === 'head') {
-                        // Posición para la cabeza
-                        ctx.drawImage(img, players[user.uid].x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
-                    } else if (position === 'legs') {
-                        // Posición para las piernas
-                        ctx.drawImage(img, players[user.uid].x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
-                    } else {
-                        // Posición por defecto si no se reconoce
-                        ctx.drawImage(img, players[user.uid].x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
-                    }
-                };
-            });
-        });
-
-        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
-    }
-});
-
 async function gameLoop() {
     try {
         // Dibujar la imagen de fondo
@@ -203,6 +159,50 @@ async function gameLoop() {
         console.error("Error en gameLoop:", error);
     }
 }
+
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
+        
+        // Array de los posibles ítems (item1, item2, item3, ...)
+        const items = ['item1', 'item2', 'item3'];
+        
+        // Iteramos sobre los ítems
+        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
+            db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
+                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
+                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
+                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
+                
+                const itemImage = itemData?.imageUrl;
+                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
+                
+                // Cargar la imagen del ítem
+                const img = new Image();
+                img.src = itemImage;
+
+                img.onload = function() {
+                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
+                    if (position === 'torso') {
+                        // Ejemplo de posición para el torso
+                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'head') {
+                        // Posición para la cabeza
+                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'legs') {
+                        // Posición para las piernas
+                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else {
+                        // Posición por defecto si no se reconoce
+                        ctx.drawImage(img, players[user.uid].x - 25, player[user.uid].y - 50, 50, 50);  // Puedes poner una posición por defecto
+                    }
+                };
+            });
+        });
+
+        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
+    }
+});
     
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
