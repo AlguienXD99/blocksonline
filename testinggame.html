@@ -92,26 +92,125 @@ backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
 
-const itemImagesCache = {}; // Almacena las imágenes ya cargadas
-
+// Cargar la configuración del usuario desde Firebase Realtime Database
 async function loadUserConfig(userUID) {
-    const snapshot = await db.ref(`users/${userUID}/equippedItems`).once('value');
-    return snapshot.val() || {};
+    try {
+        // Referencia a la base de datos en Firebase
+        const userRef = firebase.database().ref('users/' + userUID); // Ajusta la ruta si es necesario
+        const snapshot = await userRef.once('value');  // Obtén una sola lectura
+
+        // Verifica si los datos existen para este UID
+        if (snapshot.exists()) {
+            return snapshot.val();  // Devuelve los datos de configuración
+        } else {
+            console.warn(`No se encontraron datos para el usuario ${userUID}`);
+            return null;
+        }
+    } catch (error) {
+        console.error("Error al cargar la configuración del usuario desde Firebase:", error);
+        return null;
+    }
 }
 
-async function gameLoop() {
-    try {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpia el canvas en cada frame
+// Objetos globales para almacenar datos del jugador e imágenes
+const playerData = {};
+const itemImages = {};
+let currentUserUID = null;
 
+// Cargar configuración del usuario de forma asíncrona una vez, no en cada frame
+async function initializePlayer(uid) {
+    try {
+        currentUserUID = uid;
+        
+        // Cargar datos del jugador
+        const playersRef = db.ref('players');
+        const playerSnapshot = await playersRef.child(uid).once('value');
+        let plyr = playerSnapshot.val();
+        
+        if (!plyr) {
+            // Si no existe el jugador, inicializarlo con datos predeterminados
+            plyr = {
+                id: uid,
+                x: 100,
+                y: 100,
+                equippedItems: {}
+            };
+            await playersRef.child(uid).set(plyr);
+        }
+        
+        // Guardar datos en el objeto global
+        playerData[uid] = plyr;
+        
+        // Cargar configuración de usuario
+        const userConfigRef = db.ref(`users/${uid}`);
+        const userConfigSnapshot = await userConfigRef.once('value');
+        const userConfig = userConfigSnapshot.val() || {};
+        
+        // Guardar configuración en el objeto global
+        playerData[uid].userConfig = userConfig;
+        
+        // Precarga de imágenes de ítems
+        const items = ['item1', 'item2', 'item3'];
+        
+        for (const item of items) {
+            const itemRef = db.ref(`users/${uid}/equippedItems/${item}`);
+            const itemSnapshot = await itemRef.once('value');
+            const itemData = itemSnapshot.val();
+            
+            if (itemData && itemData.imageUrl) {
+                // Cargar la imagen solo una vez
+                await loadItemImage(item, itemData.imageUrl, itemData.position || 'torso');
+            }
+        }
+        
+        // Iniciar el bucle del juego una vez que todo está cargado
+        requestAnimationFrame(gameLoop);
+    } catch (error) {
+        console.error("Error al inicializar jugador:", error);
+    }
+}
+
+// Función para cargar imágenes de forma asíncrona
+function loadItemImage(itemId, imageUrl, position) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = imageUrl;
+        
+        img.onload = () => {
+            // Guardar la imagen y su posición en el objeto global
+            itemImages[itemId] = {
+                image: img,
+                position: position
+            };
+            resolve();
+        };
+        
+        img.onerror = () => {
+            console.error(`Error al cargar imagen para ${itemId}: ${imageUrl}`);
+            reject(new Error(`No se pudo cargar la imagen: ${imageUrl}`));
+        };
+    });
+}
+
+// Función principal del bucle del juego
+function gameLoop() {
+    try {
         // Dibujar la imagen de fondo
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
+        // Suavizar el movimiento del jugador actual
+        player.x += (targetX - player.x) * 0.1;
+        player.y += (targetY - player.y) * 0.1;
+
+        // Dibujar todos los jugadores
         for (const id in players) {
             let p = players[id];
-
-            // Verificar si el usuario tiene un UID válido
-            if (!p.userUID) continue;
-
+            
+            // Verificar que el jugador tiene datos válidos
+            if (!p || !p.userUID) {
+                continue;
+            }
+            
             // Dibujar el avatar del jugador
             ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
@@ -125,72 +224,52 @@ async function gameLoop() {
             if (p.hasSword) {
                 ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
-
+            
             // Dibujar ítems equipados
-            const equippedItems = p.equippedItems || {};
-            for (const item in equippedItems) {
-                const position = equippedItems[item].position || 'torso';
-                const img = itemImagesCache[item]; // Obtener la imagen cargada
-
-                if (img) {
-                    if (position === 'torso') {
-                        ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);
-                    } else if (position === 'head') {
-                        ctx.drawImage(img, p.x - 25, p.y - 70, 50, 50);
-                    } else if (position === 'legs') {
-                        ctx.drawImage(img, p.x - 25, p.y + 30, 50, 50);
-                    } else {
-                        ctx.drawImage(img, p.x - 25, p.y - 50, 50, 50);
+            if (p.userUID === currentUserUID) {
+                // Dibujar los ítems previamente cargados
+                for (const itemId in itemImages) {
+                    const item = itemImages[itemId];
+                    if (!item || !item.image) continue;
+                    
+                    // Dibujar según la posición
+                    switch (item.position) {
+                        case 'head':
+                            ctx.drawImage(item.image, p.x - 25, p.y - 70, 50, 50);
+                            break;
+                        case 'torso':
+                            ctx.drawImage(item.image, p.x - 25, p.y - 50, 50, 50);
+                            break;
+                        case 'legs':
+                            ctx.drawImage(item.image, p.x - 25, p.y + 30, 50, 50);
+                            break;
+                        default:
+                            ctx.drawImage(item.image, p.x - 25, p.y - 50, 50, 50);
                     }
                 }
             }
         }
-
-        requestAnimationFrame(gameLoop); // Llamar de nuevo a la función para el siguiente frame
+        
+        // Continuar el bucle
+        requestAnimationFrame(gameLoop);
     } catch (error) {
         console.error("Error en gameLoop:", error);
+        // Intentar continuar a pesar del error
+        requestAnimationFrame(gameLoop);
     }
 }
 
-auth.onAuthStateChanged(async (user) => {
+// Escuchar cambios en la autenticación
+auth.onAuthStateChanged(user => {
     if (user && user.uid) {
-        const playersRef = db.ref('players');
-        const playerId = user.uid;
-
-        let snapshot = await playersRef.child(playerId).once('value');
-        let plyr = snapshot.val();
-
-        if (!plyr) {
-            plyr = {
-                id: playerId,
-                x: 100,
-                y: 100,
-                equippedItems: {}
-            };
-            await playersRef.child(playerId).set(plyr);
-        }
-
-        players[playerId] = plyr;
-        players[playerId].userUID = playerId; // Guardamos el UID
-
-        // Cargar los ítems equipados
-        const itemsSnapshot = await db.ref(`users/${user.uid}/equippedItems`).once('value');
-        const equippedItems = itemsSnapshot.val() || {};
-        players[playerId].equippedItems = equippedItems;
-
-        // Cargar imágenes de los ítems en caché
-        for (const item in equippedItems) {
-            if (equippedItems[item].imageUrl) {
-                const img = new Image();
-                img.src = equippedItems[item].imageUrl;
-                itemImagesCache[item] = img; // Almacenar la imagen en caché
-            }
-        }
-
-        gameLoop(); // Iniciar el bucle de juego
+        // Inicializar el juego con el usuario actual
+        initializePlayer(user.uid);
+    } else {
+        // Usuario no autenticado
+        currentUserUID = null;
     }
 });
-
+    
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
