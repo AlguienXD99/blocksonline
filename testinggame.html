@@ -114,70 +114,96 @@ async function loadUserConfig(userUID) {
     
 auth.onAuthStateChanged(user => {
     if (user) {
-        player = { id: user.uid, equippedImages: {} }; // Asegurar inicialización
-        db.ref(`users/${user.uid}/equippedItems`).once('value', snapshot => {
-            const equippedItems = snapshot.val() || {}; 
-
-            Object.keys(equippedItems).forEach(itemKey => {
-                const itemData = equippedItems[itemKey];
-                if (!itemData || !itemData.imageUrl) return;
-
+        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
+        
+        // Array de los posibles ítems (item1, item2, item3, ...)
+        const items = ['item1', 'item2', 'item3'];
+        
+        // Iteramos sobre los ítems
+        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
+            db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
+                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
+                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
+                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
+                
+                const itemImage = itemData?.imageUrl;
+                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
+                
+                // Cargar la imagen del ítem
                 const img = new Image();
-                img.src = itemData.imageUrl;
-                img.onload = function () {
-                    player.equippedImages[itemData.position] = img;
+                img.src = itemImage;
+
+                img.onload = function() {
+                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
+                    if (position === 'torso') {
+                        // Ejemplo de posición para el torso
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'head') {
+                        // Posición para la cabeza
+                        ctx.drawImage(img, player.x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'legs') {
+                        // Posición para las piernas
+                        ctx.drawImage(img, player.x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else {
+                        // Posición por defecto si no se reconoce
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
+                    }
                 };
             });
         });
 
-        db.ref(`players/${player.id}`).set(player);
+        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
     }
 });
 
 async function gameLoop() {
     try {
+        // Dibujar la imagen de fondo
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+        // Suavizar el movimiento
         player.x += (targetX - player.x) * 0.1;
         player.y += (targetY - player.y) * 0.1;
 
         for (const id in players) {
             const p = players[id];
-            if (!p.userUID) continue;
 
-            const userConfig = await loadUserConfig(p.userUID);
-            if (!userConfig) continue;
-            const equippedItems = userConfig.equippedItems || {};
-
-            if (playerImg.complete) {
-                ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+            // Verificar que el usuario tiene un UID válido
+            if (!p.userUID) {
+                console.warn(`Jugador ${id} no tiene un UID asignado.`);
+                continue;
             }
 
-            Object.keys(equippedItems).forEach(itemKey => {
-                const itemData = equippedItems[itemKey];
-                if (!itemData || !itemData.imageUrl) return;
-                
-                const img = player.equippedImages[itemData.position];
-                if (img && img.complete) {
-                    let offsetX = -25, offsetY = -25, width = 50, height = 50;
-                    if (itemData.position === 'torso') offsetY = -50;
-                    else if (itemData.position === 'legs') offsetY = 10;
-                    else if (itemData.position === 'arms') offsetY = -30;
+            // Cargar la configuración del usuario (avatar, ítems, etc.) desde Firebase
+            const userConfig = await loadUserConfig(p.userUID);
+            if (!userConfig) {
+                console.warn(`No se pudo cargar la configuración del usuario ${p.userUID}.`);
+                continue;
+            }
 
-                    ctx.drawImage(img, p.x + offsetX, p.y + offsetY, width, height);
-                }
-            });
+            const equippedItems = userConfig.equippedItems || {}; // Obtener los ítems equipados
 
+            // Dibujar el avatar del jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+            // Dibujar nombre y vida
             ctx.fillStyle = "black";
             ctx.font = "14px Arial";
             ctx.fillText(p.name, p.x - 20, p.y - 30);
             ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+            // Dibujar espada si la tiene equipada
+            if (p.hasSword) {
+                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+            }
         }
-        requestAnimationFrame(gameLoop);
+
+        requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
     } catch (error) {
         console.error("Error en gameLoop:", error);
     }
 }
-
+    
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -282,88 +308,43 @@ function updateLeaderboard() {
     }
 }
 
-auth.onAuthStateChanged(user => {
-    if (user) {
-        player.id = user.uid;
-        
-        // Inicializar player.equippedImages si no está ya definido
-        if (!player.equippedImages) {
-            player.equippedImages = {};
-        }
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        db.ref(`users/${user.uid}/equippedItems`).once('value', snapshot => {
-            const equippedItems = snapshot.val() || {}; // Obtener los ítems equipados
-            
-            // Iterar sobre los ítems y cargar las imágenes
-            Object.keys(equippedItems).forEach(itemKey => {
-                const itemData = equippedItems[itemKey];
-                if (!itemData || !itemData.imageUrl) return;
-                
-                const img = new Image();
-                img.src = itemData.imageUrl;
-                img.onload = function () {
-                    // Aseguramos que la posición de la imagen está definida
-                    if (!player.equippedImages[itemData.position]) {
-                        player.equippedImages[itemData.position] = [];
-                    }
-                    player.equippedImages[itemData.position].push(img); // Guardamos la imagen en la posición correspondiente
-                };
-            });
-        });
-        
-        db.ref(`players/${player.id}`).set(player);
+    // Calcular la dirección hacia el destino
+    let dx = targetX - player.x;
+    let dy = targetY - player.y;
+    let distance = Math.hypot(dx, dy);
+
+    // Mover solo si la distancia es mayor que la velocidad
+    if (distance > speed) {
+        player.x += (dx / distance) * speed;
+        player.y += (dy / distance) * speed;
+    } else {
+        player.x = targetX;
+        player.y = targetY;
     }
-});
 
-async function gameLoop() {
-    try {
-        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-        player.x += (targetX - player.x) * 0.1;
-        player.y += (targetY - player.y) * 0.1;
+    for (const id in players) {
+        const p = players[id];
 
-        for (const id in players) {
-            const p = players[id];
-            if (!p.userUID) continue;
+        // Dibujar jugador
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-            const userConfig = await loadUserConfig(p.userUID);
-            if (!userConfig) continue;
-            const equippedItems = userConfig.equippedItems || {};
+        // Dibujar nombre y vida
+        ctx.fillStyle = "black";
+        ctx.font = "14px Arial";
+        ctx.fillText(p.name, p.x - 20, p.y - 30);
+        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-            // Dibujar base del jugador
-            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-
-            // Dibujar cada ítem equipado
-            Object.keys(equippedItems).forEach(itemKey => {
-                const itemData = equippedItems[itemKey];
-                if (!itemData || !itemData.imageUrl) return;
-
-                // Esperamos a que las imágenes ya cargadas se dibujen
-                if (player.equippedImages[itemData.position]) {
-                    const imgs = player.equippedImages[itemData.position];
-                    imgs.forEach(img => {
-                        let offsetX = -25, offsetY = -25, width = 50, height = 50;
-                        if (itemData.position === 'torso') offsetY = -50;
-                        else if (itemData.position === 'legs') offsetY = 10;
-                        else if (itemData.position === 'arms') offsetY = -30;
-                        
-                        ctx.drawImage(img, p.x + offsetX, p.y + offsetY, width, height);
-                    });
-                }
-            });
-
-            // Dibujar nombre y vida
-            ctx.fillStyle = "black";
-            ctx.font = "14px Arial";
-            ctx.fillText(p.name, p.x - 20, p.y - 30);
-            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+        // Dibujar espada si la tiene equipada
+        if (p.hasSword) {
+            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
         }
-        
-        requestAnimationFrame(gameLoop);
-    } catch (error) {
-        console.error("Error en gameLoop:", error);
     }
+
+    requestAnimationFrame(gameLoop);
 }
-
 
 // Actualizar base de datos cada segundo
 setInterval(() => {
