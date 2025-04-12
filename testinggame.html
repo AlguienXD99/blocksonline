@@ -284,43 +284,88 @@ function updateLeaderboard() {
     }
 }
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Calcular la dirección hacia el destino
-    let dx = targetX - player.x;
-    let dy = targetY - player.y;
-    let distance = Math.hypot(dx, dy);
-
-    // Mover solo si la distancia es mayor que la velocidad
-    if (distance > speed) {
-        player.x += (dx / distance) * speed;
-        player.y += (dy / distance) * speed;
-    } else {
-        player.x = targetX;
-        player.y = targetY;
-    }
-
-    for (const id in players) {
-        const p = players[id];
-
-        // Dibujar jugador
-        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-
-        // Dibujar nombre y vida
-        ctx.fillStyle = "black";
-        ctx.font = "14px Arial";
-        ctx.fillText(p.name, p.x - 20, p.y - 30);
-        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
-
-        // Dibujar espada si la tiene equipada
-        if (p.hasSword) {
-            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;
+        
+        // Inicializar player.equippedImages si no está ya definido
+        if (!player.equippedImages) {
+            player.equippedImages = {};
         }
-    }
 
-    requestAnimationFrame(gameLoop);
+        db.ref(`users/${user.uid}/equippedItems`).once('value', snapshot => {
+            const equippedItems = snapshot.val() || {}; // Obtener los ítems equipados
+            
+            // Iterar sobre los ítems y cargar las imágenes
+            Object.keys(equippedItems).forEach(itemKey => {
+                const itemData = equippedItems[itemKey];
+                if (!itemData || !itemData.imageUrl) return;
+                
+                const img = new Image();
+                img.src = itemData.imageUrl;
+                img.onload = function () {
+                    // Aseguramos que la posición de la imagen está definida
+                    if (!player.equippedImages[itemData.position]) {
+                        player.equippedImages[itemData.position] = [];
+                    }
+                    player.equippedImages[itemData.position].push(img); // Guardamos la imagen en la posición correspondiente
+                };
+            });
+        });
+        
+        db.ref(`players/${player.id}`).set(player);
+    }
+});
+
+async function gameLoop() {
+    try {
+        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+        player.x += (targetX - player.x) * 0.1;
+        player.y += (targetY - player.y) * 0.1;
+
+        for (const id in players) {
+            const p = players[id];
+            if (!p.userUID) continue;
+
+            const userConfig = await loadUserConfig(p.userUID);
+            if (!userConfig) continue;
+            const equippedItems = userConfig.equippedItems || {};
+
+            // Dibujar base del jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+            // Dibujar cada ítem equipado
+            Object.keys(equippedItems).forEach(itemKey => {
+                const itemData = equippedItems[itemKey];
+                if (!itemData || !itemData.imageUrl) return;
+
+                // Esperamos a que las imágenes ya cargadas se dibujen
+                if (player.equippedImages[itemData.position]) {
+                    const imgs = player.equippedImages[itemData.position];
+                    imgs.forEach(img => {
+                        let offsetX = -25, offsetY = -25, width = 50, height = 50;
+                        if (itemData.position === 'torso') offsetY = -50;
+                        else if (itemData.position === 'legs') offsetY = 10;
+                        else if (itemData.position === 'arms') offsetY = -30;
+                        
+                        ctx.drawImage(img, p.x + offsetX, p.y + offsetY, width, height);
+                    });
+                }
+            });
+
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.name, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+        }
+        
+        requestAnimationFrame(gameLoop);
+    } catch (error) {
+        console.error("Error en gameLoop:", error);
+    }
 }
+
 
 // Actualizar base de datos cada segundo
 setInterval(() => {
