@@ -120,7 +120,7 @@ testImg.onload = () => {
     testImgLoaded = true;
 };
 
-function gameLoop() {
+async function gameLoop() {
     try {
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
