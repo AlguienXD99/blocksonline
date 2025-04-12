@@ -120,7 +120,7 @@ testImg.onload = () => {
     testImgLoaded = true;
 };
 
-async function gameLoop() {
+function gameLoop() {
     try {
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
@@ -133,12 +133,6 @@ async function gameLoop() {
 
             // Dibujar el avatar
             ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-
-            // Si es el jugador especial, dibujar el accesorio
-            if (p.id === "OWpPNVaa6JPtJ27cjGMuAIwCcTt1" && testImgLoaded) {
-                ctx.drawImage(testImg, p.x - 25, p.y - 70, 50, 50);
-            }
-
             // Mostrar nombre y vida
             ctx.fillStyle = "black";
             ctx.font = "14px Arial";
