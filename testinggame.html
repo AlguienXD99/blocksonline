@@ -112,72 +112,71 @@ async function loadUserConfig(userUID) {
     }
 }
     
+// Precargar imagen especial (sombrero u otro accesorio)
+const testImg = new Image();
+testImg.src = "https://example.com/tuimagen.png";
+let testImgLoaded = false;
+testImg.onload = () => {
+    testImgLoaded = true;
+};
+
 async function gameLoop() {
     try {
-        // Dibujar la imagen de fondo
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
-        // Suavizar el movimiento
+        // Suavizar el movimiento del jugador local
         player.x += (targetX - player.x) * 0.1;
         player.y += (targetY - player.y) * 0.1;
 
         for (const id in players) {
             const p = players[id];
 
-            // Verificar que el usuario tiene un UID válido
-            if (!p.userUID) {
-                console.warn(`Jugador ${id} no tiene un UID asignado.`);
-                continue;
-            }
-
-            // Cargar la configuración del usuario (avatar, ítems, etc.) desde Firebase
-            const userConfig = await loadUserConfig(p.userUID);
-            if (!userConfig) {
-                console.warn(`No se pudo cargar la configuración del usuario ${p.userUID}.`);
-                continue;
-            }
-
-            const equippedItems = userConfig.equippedItems || {}; // Obtener los ítems equipados
-
-            // Dibujar el avatar del jugador
+            // Dibujar el avatar
             ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
 
-            // Dibujar nombre y vida
+            // Si es el jugador especial, dibujar el accesorio
+            if (p.id === "OWpPNVaa6JPtJ27cjGMuAIwCcTt1" && testImgLoaded) {
+                ctx.drawImage(testImg, p.x - 25, p.y - 70, 50, 50);
+            }
+
+            // Mostrar nombre y vida
             ctx.fillStyle = "black";
             ctx.font = "14px Arial";
             ctx.fillText(p.name, p.x - 20, p.y - 30);
             ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-            // Dibujar espada si la tiene equipada
+            // Verifica UID y carga configuración
+            if (!p.userUID) continue;
+
+            const userConfig = await loadUserConfig(p.userUID);
+            if (!userConfig) continue;
+
+            const equippedItems = userConfig.equippedItems || {};
+
+            // Dibujar espada si tiene
             if (p.hasSword) {
                 ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
 
-            // Cargar los ítems equipados dentro del gameLoop
+            // Dibujar ítems equipados
             for (const item in equippedItems) {
-                if (!equippedItems[item].imageUrl) continue;  // Verifica si hay URL para la imagen
+                const data = equippedItems[item];
+                if (!data.imageUrl) continue;
 
                 const img = new Image();
-                img.src = equippedItems[item].imageUrl;
+                img.src = data.imageUrl;
 
                 img.onload = function () {
                     let x = p.x - 25;
-                    let y = p.y - 50;
+                    let y = data.position === 'head' ? p.y - 70 :
+                            data.position === 'legs' ? p.y + 30 : p.y - 50;
 
-                    // Determina la posición del ítem en el personaje
-                    if (equippedItems[item].position === 'head') {
-                        y = p.y - 70;
-                    } else if (equippedItems[item].position === 'legs') {
-                        y = p.y + 30;
-                    }
-
-                    // Dibuja el ítem en el lienzo
                     ctx.drawImage(img, x, y, 50, 50);
                 };
             }
         }
 
-        requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
+        requestAnimationFrame(gameLoop);
     } catch (error) {
         console.error("Error en gameLoop:", error);
     }
