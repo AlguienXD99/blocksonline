@@ -111,233 +111,99 @@ async function loadUserConfig(userUID) {
         return null;
     }
 }
-
-// Función de diagnóstico para verificar que todo está sincronizado
-function diagnosticCheck() {
-    console.log("=== DIAGNÓSTICO COMPLETO ===");
-    console.log("1. Estado global:");
-    console.log(" - currentUserUID:", currentUserUID);
-    console.log(" - Número de ítems cargados:", Object.keys(itemImages).length);
     
-    // Verificar si el jugador actual está en el objeto players
-    let currentPlayerFound = false;
-    for (const id in players) {
-        if (players[id].userUID === currentUserUID) {
-            currentPlayerFound = true;
-            console.log("2. Jugador actual encontrado en 'players':", id);
-            console.log(" - Posición:", players[id].x, players[id].y);
-            break;
-        }
-    }
-    
-    if (!currentPlayerFound) {
-        console.error("PROBLEMA: El jugador actual NO está en el objeto 'players'");
-        console.log("IDs disponibles en players:", Object.keys(players));
-    }
-    
-    // Verificar las imágenes cargadas
-    console.log("3. Estado de las imágenes:");
-    for (const itemId in itemImages) {
-        const item = itemImages[itemId];
-        console.log(` - Ítem ${itemId}:`);
-        console.log(`   * Tiene imagen: ${!!item.image}`);
-        if (item.image) {
-            console.log(`   * Dimensiones: ${item.image.width}x${item.image.height}`);
-            console.log(`   * Cargada completamente: ${item.image.complete}`);
-            console.log(`   * Posición asignada: ${item.position}`);
-        }
-    }
-    
-    console.log("=== FIN DEL DIAGNÓSTICO ===");
-}
-
-// Modificación a la función initializePlayer para incluir el diagnóstico
-async function initializePlayer(uid) {
-    try {
-        currentUserUID = uid;
+auth.onAuthStateChanged(user => {
+    if (user) {
+        player.id = user.uid;  // Se obtiene el UID del usuario autenticado
         
-        // ... (resto del código existente sin cambios)
+        // Array de los posibles ítems (item1, item2, item3, ...)
+        const items = ['item1', 'item2', 'item3'];
         
-        // Al final, después de cargar todo, ejecutar el diagnóstico
-        console.log("Ejecutando diagnóstico después de inicialización:");
-        diagnosticCheck();
-        
-        // Iniciar el bucle del juego una vez que todo está cargado
-        requestAnimationFrame(gameLoop);
-    } catch (error) {
-        console.error("Error al inicializar jugador:", error);
-    }
-}
+        // Iteramos sobre los ítems
+        items.forEach(item => {  // Aquí "item" es la variable que tomará cada valor de 'item1', 'item2', etc.
+            db.ref(`users/${user.uid}/equippedItems/${item}`).once('value', snapshot => {
+                const itemData = snapshot.val();  // Ahora 'itemData' es el objeto con las propiedades 'position', 'imageUrl', etc.
+                console.log(`${item} position: ${itemData?.position}`);  // Accedes a la propiedad 'position'
+                console.log(`${item} imageUrl: ${itemData?.imageUrl}`);  // Accedes a la propiedad 'imageUrl'
+                
+                const itemImage = itemData?.imageUrl;
+                const position = itemData?.position || 'torso';  // Establecer posición por defecto si no se encuentra 'position'
+                
+                // Cargar la imagen del ítem
+                const img = new Image();
+                img.src = itemImage;
 
-// Modificación al gameLoop para añadir validación visual
-function gameLoop() {
+                img.onload = function() {
+                    // Dependiendo de la posición, dibujamos el ítem en el lugar correcto
+                    if (position === 'torso') {
+                        // Ejemplo de posición para el torso
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'head') {
+                        // Posición para la cabeza
+                        ctx.drawImage(img, player.x - 25, player.y - 70, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else if (position === 'legs') {
+                        // Posición para las piernas
+                        ctx.drawImage(img, player.x - 25, player.y + 30, 50, 50);  // Ajusta las coordenadas según lo necesites
+                    } else {
+                        // Posición por defecto si no se reconoce
+                        ctx.drawImage(img, player.x - 25, player.y - 50, 50, 50);  // Puedes poner una posición por defecto
+                    }
+                };
+            });
+        });
+
+        db.ref(`players/${player.id}`).set(player);  // Guarda el jugador en la base de datos
+    }
+});
+
+async function gameLoop() {
     try {
         // Dibujar la imagen de fondo
         ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
-        // Resto del código existente sin cambios hasta la parte de dibujar ítems
-        
-        // Añadir un contador de frames para ejecutar el diagnóstico ocasionalmente
-        gameLoop.frameCount = (gameLoop.frameCount || 0) + 1;
-        if (gameLoop.frameCount % 300 === 0) { // Cada ~5 segundos a 60fps
-            console.log("Diagnóstico periódico:");
-            diagnosticCheck();
-        }
-        
-        // Dibujar todos los jugadores
+        // Suavizar el movimiento
+        player.x += (targetX - player.x) * 0.1;
+        player.y += (targetY - player.y) * 0.1;
+
         for (const id in players) {
-            let p = players[id];
-            
-            // Verificación y dibujo del jugador (sin cambios)
-            
-            // IMPORTANTE: Añadir una verificación visual para el jugador actual
-            if (p.userUID === currentUserUID) {
-                // Dibujar un marcador para el jugador actual
-                ctx.strokeStyle = "red";
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 60, 0, Math.PI * 2);
-                ctx.stroke();
-                
-                // Añadir texto de estado
-                ctx.fillStyle = "blue";
-                ctx.font = "bold 16px Arial";
-                ctx.fillText("Jugador Actual", p.x - 50, p.y - 80);
-                ctx.fillText(`UID: ${p.userUID.substring(0,8)}...`, p.x - 50, p.y - 100);
-                
-                // Verificar si hay ítems para dibujar
-                const itemCount = Object.keys(itemImages).length;
-                ctx.fillStyle = itemCount > 0 ? "green" : "red";
-                ctx.fillText(`Ítems: ${itemCount}`, p.x - 50, p.y - 120);
-                
-                // CAMBIO IMPORTANTE: Dibujar un indicador visual para cada posición de ítem
-                // Esto ayudará a ver si las coordenadas son correctas
-                const positions = {
-                    'head': { y: p.y - 70, color: 'purple' },
-                    'torso': { y: p.y - 50, color: 'blue' },
-                    'legs': { y: p.y + 30, color: 'green' }
-                };
-                
-                // Dibujar marcadores para las posiciones de los ítems
-                for (const pos in positions) {
-                    const { y, color } = positions[pos];
-                    ctx.strokeStyle = color;
-                    ctx.strokeRect(p.x - 25, y, 50, 50);
-                    ctx.fillStyle = color;
-                    ctx.fillText(pos, p.x - 25, y - 5);
-                }
-                
-                // Dibujar los ítems con verificación rigurosa
-                for (const itemId in itemImages) {
-                    const item = itemImages[itemId];
-                    
-                    if (!item || !item.image) continue;
-                    
-                    try {
-                        // VALIDACIÓN EXTRA
-                        if (!item.image.complete) {
-                            console.warn(`Imagen para ${itemId} no está completamente cargada`);
-                            continue;
-                        }
-                        
-                        // Seleccionar posición y dibujar el ítem
-                        let itemY;
-                        switch (item.position) {
-                            case 'head': itemY = p.y - 70; break;
-                            case 'torso': itemY = p.y - 50; break;
-                            case 'legs': itemY = p.y + 30; break;
-                            default: itemY = p.y - 50;
-                        }
-                        
-                        // Dibujar un marcador específico para este ítem
-                        ctx.strokeStyle = "orange";
-                        ctx.strokeRect(p.x - 25, itemY, 50, 50);
-                        
-                        // CAMBIO CRÍTICO: Usar save/restore para asegurar estado limpio del contexto
-                        ctx.save();
-                        ctx.drawImage(item.image, p.x - 25, itemY, 50, 50);
-                        ctx.restore();
-                        
-                        // Dibujar nombre del ítem
-                        ctx.fillStyle = "black";
-                        ctx.font = "12px Arial";
-                        ctx.fillText(itemId, p.x - 20, itemY + 25);
-                    } catch (e) {
-                        console.error(`Error dibujando ítem ${itemId}:`, e, item);
-                    }
-                }
+            const p = players[id];
+
+            // Verificar que el usuario tiene un UID válido
+            if (!p.userUID) {
+                console.warn(`Jugador ${id} no tiene un UID asignado.`);
+                continue;
+            }
+
+            // Cargar la configuración del usuario (avatar, ítems, etc.) desde Firebase
+            const userConfig = await loadUserConfig(p.userUID);
+            if (!userConfig) {
+                console.warn(`No se pudo cargar la configuración del usuario ${p.userUID}.`);
+                continue;
+            }
+
+            const equippedItems = userConfig.equippedItems || {}; // Obtener los ítems equipados
+
+            // Dibujar el avatar del jugador
+            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+
+            // Dibujar nombre y vida
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.fillText(p.name, p.x - 20, p.y - 30);
+            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+
+            // Dibujar espada si la tiene equipada
+            if (p.hasSword) {
+                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
             }
         }
-        
-        // Continuar el bucle
-        requestAnimationFrame(gameLoop);
+
+        requestAnimationFrame(gameLoop);  // Llamar de nuevo a la función para el siguiente frame
     } catch (error) {
         console.error("Error en gameLoop:", error);
-        requestAnimationFrame(gameLoop);
     }
 }
-
-// SOLUCIÓN ALTERNATIVA: Si nada funciona, añadir esta función para forzar el dibujado
-function forceDrawItems() {
-    if (!currentUserUID) {
-        console.error("No hay usuario actual");
-        return;
-    }
     
-    // Encontrar el jugador actual
-    let currentPlayer = null;
-    for (const id in players) {
-        if (players[id].userUID === currentUserUID) {
-            currentPlayer = players[id];
-            break;
-        }
-    }
-    
-    if (!currentPlayer) {
-        console.error("Jugador actual no encontrado");
-        return;
-    }
-    
-    console.log("Dibujando ítems forzadamente:");
-    for (const itemId in itemImages) {
-        const item = itemImages[itemId];
-        if (!item || !item.image) continue;
-        
-        console.log(`- Dibujando ${itemId} en posición ${item.position}`);
-        
-        // Determinar coordenadas según la posición
-        let x = currentPlayer.x - 25;
-        let y;
-        switch (item.position) {
-            case 'head': y = currentPlayer.y - 70; break;
-            case 'torso': y = currentPlayer.y - 50; break;
-            case 'legs': y = currentPlayer.y + 30; break;
-            default: y = currentPlayer.y - 50;
-        }
-        
-        // Forzar el dibujado directo en el canvas
-        try {
-            // Primero, dibujamos un marcador
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, 50, 50);
-            
-            // Luego dibujamos la imagen en estado limpio
-            ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformaciones
-            ctx.globalAlpha = 1; // Reset transparencia
-            ctx.drawImage(item.image, x, y, 50, 50);
-            ctx.restore();
-            
-            console.log(`- Ítem ${itemId} dibujado con éxito (forzado)`);
-        } catch (e) {
-            console.error(`- Error dibujando ítem ${itemId} (forzado):`, e);
-        }
-    }
-}
-
-// Agregar esta línea al final de initializePlayer para la solución alternativa
-// setTimeout(forceDrawItems, 2000); // Intentar dibujar forzadamente después de 2 segundos
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
