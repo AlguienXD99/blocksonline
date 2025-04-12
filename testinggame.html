@@ -112,155 +112,7 @@ async function loadUserConfig(userUID) {
     }
 }
 
-// Objetos globales para almacenar datos del jugador e imágenes
-const playerData = {};
-const itemImages = {};
-let currentUserUID = null;
-let debugMode = true; // Activar para ver logs de depuración
-
-// Cargar configuración del usuario de forma asíncrona una vez, no en cada frame
-async function initializePlayer(uid) {
-    try {
-        if (debugMode) console.log(`Inicializando jugador con UID: ${uid}`);
-        currentUserUID = uid;
-        
-        // Cargar datos del jugador
-        const playersRef = db.ref('players');
-        const playerSnapshot = await playersRef.child(uid).once('value');
-        let plyr = playerSnapshot.val();
-        
-        if (debugMode) console.log("Datos del jugador cargados:", plyr);
-        
-        if (!plyr) {
-            if (debugMode) console.log("Creando nuevo jugador");
-            // Si no existe el jugador, inicializarlo con datos predeterminados
-            plyr = {
-                id: uid,
-                x: 100,
-                y: 100,
-                equippedItems: {},
-                userUID: uid, // Asegurarse de que userUID está definido
-                name: "Jugador", // Nombre por defecto
-                health: 100 // Salud por defecto
-            };
-            await playersRef.child(uid).set(plyr);
-        }
-        
-        // Asegurarse de que userUID está definido
-        if (!plyr.userUID) {
-            plyr.userUID = uid;
-            await playersRef.child(uid).update({ userUID: uid });
-        }
-        
-        // Guardar datos en el objeto global
-        playerData[uid] = plyr;
-        
-        // Importante: También registrar este jugador en el objeto 'players' usado en gameLoop
-        // Este puede ser el problema - si 'players' no está sincronizado con 'playerData'
-        if (typeof players === 'object') {
-            players[uid] = plyr;
-            if (debugMode) console.log("Jugador registrado en objeto players:", players[uid]);
-        } else {
-            console.error("Error: 'players' no está definido correctamente");
-        }
-        
-        // Cargar configuración de usuario
-        const userConfigRef = db.ref(`users/${uid}`);
-        const userConfigSnapshot = await userConfigRef.once('value');
-        const userConfig = userConfigSnapshot.val() || {};
-        
-        if (debugMode) console.log("Configuración de usuario cargada:", userConfig);
-        
-        // Guardar configuración en el objeto global
-        playerData[uid].userConfig = userConfig;
-        
-        // Precarga de imágenes de ítems
-        const items = ['item1', 'item2', 'item3'];
-        
-        if (debugMode) console.log("Iniciando carga de imágenes de ítems...");
-        
-        for (const item of items) {
-            const itemRef = db.ref(`users/${uid}/equippedItems/${item}`);
-            const itemSnapshot = await itemRef.once('value');
-            const itemData = itemSnapshot.val();
-            
-            if (debugMode) console.log(`Datos del ítem ${item}:`, itemData);
-            
-            if (itemData && itemData.imageUrl) {
-                // Cargar la imagen solo una vez
-                try {
-                    await loadItemImage(item, itemData.imageUrl, itemData.position || 'torso');
-                    if (debugMode) console.log(`Imagen cargada exitosamente: ${item}`);
-                } catch (err) {
-                    console.error(`Error cargando imagen ${item}:`, err);
-                }
-            } else {
-                if (debugMode) console.log(`No hay datos para el ítem ${item} o falta imageUrl`);
-            }
-        }
-        
-        if (debugMode) {
-            console.log("Estado final de itemImages:", 
-                        Object.keys(itemImages).map(key => ({ 
-                            key, 
-                            hasImage: !!itemImages[key].image,
-                            position: itemImages[key].position
-                        })));
-        }
-        
-        // Iniciar el bucle del juego una vez que todo está cargado
-        if (debugMode) console.log("Iniciando bucle del juego");
-        requestAnimationFrame(gameLoop);
-    } catch (error) {
-        console.error("Error al inicializar jugador:", error);
-    }
-}
-
-// Función para cargar imágenes de forma asíncrona
-function loadItemImage(itemId, imageUrl, position) {
-    if (debugMode) console.log(`Cargando imagen para ${itemId}: ${imageUrl}`);
-    
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        
-        // Importante: agregar timeout para evitar esperas infinitas
-        const timeout = setTimeout(() => {
-            if (debugMode) console.error(`Timeout al cargar imagen para ${itemId}`);
-            reject(new Error(`Timeout al cargar imagen: ${imageUrl}`));
-        }, 10000); // 10 segundos de timeout
-        
-        img.onload = () => {
-            clearTimeout(timeout);
-            if (debugMode) console.log(`Imagen cargada para ${itemId}: ${img.width}x${img.height}`);
-            
-            // Guardar la imagen y su posición en el objeto global
-            itemImages[itemId] = {
-                image: img,
-                position: position
-            };
-            resolve();
-        };
-        
-        img.onerror = () => {
-            clearTimeout(timeout);
-            console.error(`Error al cargar imagen para ${itemId}: ${imageUrl}`);
-            reject(new Error(`No se pudo cargar la imagen: ${imageUrl}`));
-        };
-        
-        // Verificar si la URL es válida
-        if (!imageUrl || !imageUrl.startsWith('http')) {
-            console.error(`URL de imagen inválida para ${itemId}: ${imageUrl}`);
-            reject(new Error(`URL de imagen inválida: ${imageUrl}`));
-            return;
-        }
-        
-        // Set crossOrigin to allow images from different domains
-        img.crossOrigin = "Anonymous";
-        img.src = imageUrl;
-    });
-}
-
-// Función principal del bucle del juego
+// Función principal del bucle del juego con mejor depuración de renderizado
 function gameLoop() {
     try {
         // Dibujar la imagen de fondo
@@ -270,6 +122,24 @@ function gameLoop() {
         if (player && targetX !== undefined && targetY !== undefined) {
             player.x += (targetX - player.x) * 0.1;
             player.y += (targetY - player.y) * 0.1;
+        }
+
+        // DEPURACIÓN: Comprobar estado de los objetos
+        if (debugMode) {
+            console.log("Estado actual en gameLoop:");
+            console.log("- currentUserUID:", currentUserUID);
+            console.log("- itemImages cargadas:", Object.keys(itemImages));
+            console.log("- players disponibles:", Object.keys(players));
+        }
+
+        // Buscar explícitamente al jugador actual
+        let currentPlayer = null;
+        for (const id in players) {
+            if (players[id].userUID === currentUserUID) {
+                currentPlayer = players[id];
+                if (debugMode) console.log("Jugador actual encontrado:", id);
+                break;
+            }
         }
 
         // Dibujar todos los jugadores
@@ -304,10 +174,21 @@ function gameLoop() {
                 }
             }
             
-            // Dibujar ítems equipados
-            if (p.userUID === currentUserUID) {
-                if (debugMode) console.log("Dibujando ítems para jugador actual:", 
-                                         Object.keys(itemImages).length > 0 ? "Hay ítems" : "No hay ítems");
+            // CAMBIO IMPORTANTE: Dibujar ítems equipados para TODOS los jugadores
+            // O bien comprobar que estamos en el jugador correcto
+            const isCurrentPlayer = p.userUID === currentUserUID;
+            if (debugMode && isCurrentPlayer) {
+                console.log(`Dibujando ítems para jugador ${id}:`);
+                console.log(`  - Es jugador actual: ${isCurrentPlayer}`);
+                console.log(`  - Posición: x=${p.x}, y=${p.y}`);
+                console.log(`  - Items disponibles: ${Object.keys(itemImages).length}`);
+            }
+            
+            // Solo dibujar los ítems para el jugador actual
+            if (isCurrentPlayer) {
+                // CAMBIO: Dibuja un fondo para verificar que la posición es correcta
+                ctx.fillStyle = "rgba(255, 0, 0, 0.2)"; // Rojo transparente
+                ctx.fillRect(p.x - 30, p.y - 75, 60, 130); // Área donde deberían estar los ítems
                 
                 // Dibujar los ítems previamente cargados
                 for (const itemId in itemImages) {
@@ -321,24 +202,46 @@ function gameLoop() {
                     if (debugMode) console.log(`Dibujando ítem ${itemId} en posición ${item.position}`);
                     
                     try {
-                        // Dibujar según la posición
+                        // CAMBIO: Dibuja un marco para ver dónde debería estar el ítem
+                        let itemX = p.x - 25;
+                        let itemY = p.y - 50; // Posición por defecto (torso)
+                        
+                        // Ajustar Y según la posición
                         switch (item.position) {
                             case 'head':
-                                ctx.drawImage(item.image, p.x - 25, p.y - 70, 50, 50);
+                                itemY = p.y - 70;
                                 break;
                             case 'torso':
-                                ctx.drawImage(item.image, p.x - 25, p.y - 50, 50, 50);
+                                itemY = p.y - 50;
                                 break;
                             case 'legs':
-                                ctx.drawImage(item.image, p.x - 25, p.y + 30, 50, 50);
+                                itemY = p.y + 30;
                                 break;
-                            default:
-                                ctx.drawImage(item.image, p.x - 25, p.y - 50, 50, 50);
                         }
+                        
+                        // Dibujar marco de depuración
+                        ctx.strokeStyle = "lime";
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(itemX, itemY, 50, 50);
+                        
+                        // Dibujar el ítem
+                        ctx.drawImage(item.image, itemX, itemY, 50, 50);
+                        
+                        // Dibujar información del ítem
+                        ctx.fillStyle = "blue";
+                        ctx.font = "10px Arial";
+                        ctx.fillText(itemId, itemX, itemY - 5);
                         
                         if (debugMode) console.log(`Ítem ${itemId} dibujado con éxito`);
                     } catch (e) {
-                        console.error(`Error dibujando ítem ${itemId}:`, e);
+                        console.error(`Error dibujando ítem ${itemId}:`, e, item);
+                        // AÑADIDO: Más información sobre el error
+                        console.log(`  - item.image es válido: ${!!item.image}`);
+                        if (item.image) {
+                            console.log(`  - Dimensiones: ${item.image.width}x${item.image.height}`);
+                            console.log(`  - Completada: ${item.image.complete}`);
+                            console.log(`  - URL: ${item.image.src}`);
+                        }
                     }
                 }
             }
@@ -352,19 +255,6 @@ function gameLoop() {
         requestAnimationFrame(gameLoop);
     }
 }
-
-// Escuchar cambios en la autenticación
-auth.onAuthStateChanged(user => {
-    if (user && user.uid) {
-        if (debugMode) console.log("Usuario autenticado:", user.uid);
-        // Inicializar el juego con el usuario actual
-        initializePlayer(user.uid);
-    } else {
-        if (debugMode) console.log("Usuario no autenticado");
-        // Usuario no autenticado
-        currentUserUID = null;
-    }
-});
     
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
