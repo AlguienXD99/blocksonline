@@ -114,21 +114,22 @@ async function loadUserConfig(userUID) {
     
 auth.onAuthStateChanged(user => {
     if (user) {
-        player.id = user.uid;
+        player = { id: user.uid, equippedImages: {} }; // Asegurar inicialización
         db.ref(`users/${user.uid}/equippedItems`).once('value', snapshot => {
-            const equippedItems = snapshot.val() || {}; // Obtener los ítems equipados
-            
+            const equippedItems = snapshot.val() || {}; 
+
             Object.keys(equippedItems).forEach(itemKey => {
                 const itemData = equippedItems[itemKey];
                 if (!itemData || !itemData.imageUrl) return;
-                
+
                 const img = new Image();
                 img.src = itemData.imageUrl;
                 img.onload = function () {
-                    player.equippedImages[itemData.position] = img; // Guardar la imagen en la posición correspondiente
+                    player.equippedImages[itemData.position] = img;
                 };
             });
         });
+
         db.ref(`players/${player.id}`).set(player);
     }
 });
@@ -147,27 +148,25 @@ async function gameLoop() {
             if (!userConfig) continue;
             const equippedItems = userConfig.equippedItems || {};
 
-            // Dibujar base del jugador
-            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+            if (playerImg.complete) {
+                ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+            }
 
-            // Dibujar cada ítem equipado
             Object.keys(equippedItems).forEach(itemKey => {
                 const itemData = equippedItems[itemKey];
                 if (!itemData || !itemData.imageUrl) return;
                 
-                const img = new Image();
-                img.src = itemData.imageUrl;
-                img.onload = function () {
+                const img = player.equippedImages[itemData.position];
+                if (img && img.complete) {
                     let offsetX = -25, offsetY = -25, width = 50, height = 50;
                     if (itemData.position === 'torso') offsetY = -50;
                     else if (itemData.position === 'legs') offsetY = 10;
                     else if (itemData.position === 'arms') offsetY = -30;
-                    
+
                     ctx.drawImage(img, p.x + offsetX, p.y + offsetY, width, height);
-                };
+                }
             });
 
-            // Dibujar nombre y vida
             ctx.fillStyle = "black";
             ctx.font = "14px Arial";
             ctx.fillText(p.name, p.x - 20, p.y - 30);
@@ -179,7 +178,6 @@ async function gameLoop() {
     }
 }
 
-    
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
