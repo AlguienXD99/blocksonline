@@ -92,24 +92,15 @@ backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
 
-// Cargar la configuración del usuario desde Firebase Realtime Database
-async function loadUserConfig(userUID) {
-    try {
-        // Referencia a la base de datos en Firebase
-        const userRef = firebase.database().ref('users/' + userUID); // Ajusta la ruta si es necesario
-        const snapshot = await userRef.once('value');  // Obtén una sola lectura
+async function loadUserConfig(uid) {
+    const userRef = ref(db, `users/${uid}`);
+    const snapshot = await get(userRef);
+    return snapshot.exists() ? snapshot.val() : null;
+}
 
-        // Verifica si los datos existen para este UID
-        if (snapshot.exists()) {
-            return snapshot.val();  // Devuelve los datos de configuración
-        } else {
-            console.warn(`No se encontraron datos para el usuario ${userUID}`);
-            return null;
-        }
-    } catch (error) {
-        console.error("Error al cargar la configuración del usuario desde Firebase:", error);
-        return null;
-    }
+async function saveEquippedItemsToPlayers(uid, equippedItems) {
+    const playerRef = ref(db, `players/${uid}/equippedItems`);
+    await set(playerRef, equippedItems);
 }
     
 // Precargar imagen especial (sombrero u otro accesorio)
@@ -146,6 +137,9 @@ async function gameLoop() {
             if (!userConfig) continue;
 
             const equippedItems = userConfig.equippedItems || {};
+
+            // 🆕 Guardamos en la base de datos "players/[UID]/equippedItems"
+            await saveEquippedItemsToPlayers(p.userUID, equippedItems);
 
             // Dibujar espada si tiene
             if (p.hasSword) {
