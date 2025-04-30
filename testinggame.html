@@ -99,8 +99,18 @@ async function loadUserConfig(uid) {
 }
 
 async function saveEquippedItemsToPlayers(uid, equippedItems) {
+    const extractedUrls = {};
+
+    for (const itemKey of ["item1", "item2", "item3"]) {
+        if (equippedItems[itemKey] && equippedItems[itemKey].imageUrl) {
+            extractedUrls[itemKey] = {
+                imageUrl: equippedItems[itemKey].imageUrl
+            };
+        }
+    }
+
     const playerRef = ref(db, `players/${uid}/equippedItems`);
-    await set(playerRef, equippedItems);
+    await set(playerRef, extractedUrls);
 }
     
 // Precargar imagen especial (sombrero u otro accesorio)
