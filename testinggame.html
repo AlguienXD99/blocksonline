@@ -112,6 +112,32 @@ async function saveEquippedItemsToPlayers(uid, equippedItems) {
     const playerRef = ref(db, `players/${uid}/equippedItems`);
     await set(playerRef, extractedUrls);
 }
+
+async function syncUserItemsToPlayer(uid) {
+    const userData = await loadUserConfig(uid);
+    if (!userData || !userData.equippedItems) return;
+
+    await saveEquippedItemsToPlayers(uid, userData.equippedItems);
+
+    // Guardar también los items en la memoria local (opcional)
+    if (players[uid]) {
+        players[uid].equippedItems = userData.equippedItems;
+    }
+}
+
+function onPlayerConnected(uid, username, x = 100, y = 100) {
+    players[uid] = {
+        x,
+        y,
+        name: username,
+        health: 100,
+        hasSword: false,
+        userUID: uid,
+        equippedItems: {} // se llenará luego
+    };
+
+    syncUserItemsToPlayer(uid);
+}
     
 // Precargar imagen especial (sombrero u otro accesorio)
 const testImg = new Image();
