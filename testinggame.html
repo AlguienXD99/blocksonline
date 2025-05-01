@@ -162,19 +162,39 @@ let targetX = player.x, targetY = player.y;
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        // Obtiene el ID del usuario
         player.id = user.uid;
 
-        // Obtiene el 'nickname' del usuario desde la base de datos
-        db.ref(`users/${user.uid}/nickname`).once('value', snapshot => {
-            const nickname = snapshot.val(); // El valor del 'nickname'
-            player.name = nickname || user.email.split("@")[0] || "Anónimo"; // Si no hay nickname, usa el email
+        // Establecer que el usuario está conectado al juego
+        const userStatusRef = db.ref(`users/${user.uid}/isConnectedToGame1`);
+        userStatusRef.set(true);
 
-            // Guarda el jugador en la base de datos bajo la ruta de players
+        // Asegurar que se marque como desconectado cuando la página se cierre o recargue
+        window.addEventListener("beforeunload", () => {
+            db.ref(`players/${player.id}`).remove();
+            userStatusRef.set(false);
+        });
+
+        // Redundancia adicional para otros tipos de cierre (tab escondida, pérdida de foco, etc.)
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                userStatusRef.set(false);
+            } else if (document.visibilityState === "visible") {
+                userStatusRef.set(true);
+            }
+        });
+
+        // También al desconectar Firebase (opcional por seguridad)
+        window.addEventListener("unload", () => {
+            userStatusRef.set(false);
+        });
+
+        // Obtener nickname
+        db.ref(`users/${user.uid}/nickname`).once('value', snapshot => {
+            const nickname = snapshot.val();
+            player.name = nickname || user.email.split("@")[0] || "Anónimo";
             db.ref(`players/${player.id}`).set(player);
         });
 
-        // Actualiza la lista de jugadores en tiempo real
         db.ref("players").on("value", snapshot => {
             players = snapshot.val() || {};
             updateLeaderboard();
