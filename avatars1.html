@@ -10,6 +10,13 @@
             flex-wrap: wrap;
             justify-content: center;
         }
+        .playerContainer {
+            margin: 20px;
+            text-align: center;
+        }
+        .playerContainer h3 {
+            margin: 10px 0;
+        }
         img {
             max-width: 100px;
             margin: 10px;
@@ -51,34 +58,53 @@
             }
 
             const uid = user.uid;
-            const equippedRef = ref(db, `users/${uid}/equippedItems`);
-
-            get(equippedRef)
+            const usersRef = ref(db, 'users');
+            
+            // Obtenemos todos los usuarios
+            get(usersRef)
                 .then((snapshot) => {
                     if (!snapshot.exists()) {
-                        equippedContainer.innerText = "No hay ítems equipados.";
+                        equippedContainer.innerText = "No hay usuarios conectados.";
                         return;
                     }
 
-                    const data = snapshot.val();
+                    const usersData = snapshot.val();
 
-                    // Iteramos sobre los ítems para mostrar las imágenes
-                    ["item1", "item2", "item3"].forEach((itemKey) => {
-                        const item = data[itemKey];
-                        if (item?.imageUrl && item.imageUrl.startsWith('http')) {
-                            const img = document.createElement("img");
-                            img.src = item.imageUrl;
-                            img.alt = `${itemKey} image`;
-                            img.style.width = "100px";
-                            img.style.margin = "10px";
-                            equippedContainer.appendChild(img);
-                        } else {
-                            console.error(`URL de imagen no válida para ${itemKey}: ${item?.imageUrl}`);
+                    // Filtramos y mostramos los ítems solo para los usuarios que están conectados al juego
+                    Object.keys(usersData).forEach((userKey) => {
+                        const user = usersData[userKey];
+                        if (user.isConnectedToGame1) {
+                            const nickname = user.nicknames;
+                            const equippedItems = user.equippedItems;
+
+                            // Creamos un contenedor para los ítems de cada jugador
+                            const playerContainer = document.createElement("div");
+                            playerContainer.classList.add("playerContainer");
+
+                            const playerName = document.createElement("h3");
+                            playerName.innerText = nickname;
+                            playerContainer.appendChild(playerName);
+
+                            // Iteramos sobre los ítems equipados de cada jugador
+                            for (let itemKey in equippedItems) {
+                                const item = equippedItems[itemKey];
+                                if (item?.imageUrl && item.imageUrl.startsWith('http')) {
+                                    const img = document.createElement("img");
+                                    img.src = item.imageUrl;
+                                    img.alt = `${itemKey} image`;
+                                    playerContainer.appendChild(img);
+                                } else {
+                                    console.error(`URL de imagen no válida para ${itemKey}: ${item?.imageUrl}`);
+                                }
+                            }
+
+                            // Añadimos los ítems del jugador al contenedor principal
+                            equippedContainer.appendChild(playerContainer);
                         }
                     });
                 })
                 .catch((error) => {
-                    console.error("Error al obtener ítems equipados:", error);
+                    console.error("Error al obtener los usuarios:", error);
                 });
         });
     </script>
