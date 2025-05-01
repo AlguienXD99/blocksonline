@@ -349,7 +349,7 @@ setInterval(() => {
     document.getElementById("attackButton").addEventListener("click", attack);
 </script>
 <div id="equippedImagesContainer"></div>
-<script>
+<script type="module">
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 const auth = getAuth();  // o getAuth(app) si usas initializeApp
 const equippedContainer = document.getElementById("equippedImagesContainer");
