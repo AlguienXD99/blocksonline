@@ -74,7 +74,7 @@
                     Object.keys(usersData).forEach((userKey) => {
                         const user = usersData[userKey];
                         if (user.isConnectedToGame1) {
-                            const nickname = user.nicknames;
+                            const nickname = user.nickname;  // Aquí cambiamos 'nicknames' por 'nickname'
                             const equippedItems = user.equippedItems;
 
                             // Creamos un contenedor para los ítems de cada jugador
@@ -95,6 +95,13 @@
                                     playerContainer.appendChild(img);
                                 } else {
                                     console.error(`URL de imagen no válida para ${itemKey}: ${item?.imageUrl}`);
+                                }
+
+                                // Mostramos también la posición del ítem
+                                if (item?.position) {
+                                    const positionText = document.createElement("p");
+                                    positionText.innerText = `Posición: ${item.position}`;
+                                    playerContainer.appendChild(positionText);
                                 }
                             }
 
