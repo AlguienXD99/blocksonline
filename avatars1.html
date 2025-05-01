@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargar Imágenes desde Firebase</title>
+    <style>
+        #equippedImagesContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        img {
+            max-width: 100px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ítems Equipados</h1>
+    <div id="equippedImagesContainer"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+
+        // Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+            authDomain: "virtualblocks-b7a52.firebaseapp.com",
+            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+            projectId: "virtualblocks-b7a52",
+            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+            messagingSenderId: "490618182453",
+            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+        };
+
+        // Inicialización de Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        // Contenedor donde se mostrarán los ítems equipados
+        const equippedContainer = document.getElementById("equippedImagesContainer");
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                equippedContainer.innerText = "No has iniciado sesión.";
+                return;
+            }
+
+            const uid = user.uid;
+            const equippedRef = ref(db, `users/${uid}/equippedItems`);
+
+            get(equippedRef)
+                .then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        equippedContainer.innerText = "No hay ítems equipados.";
+                        return;
+                    }
+
+                    const data = snapshot.val();
+
+                    // Iteramos sobre los ítems para mostrar las imágenes
+                    ["item1", "item2", "item3"].forEach((itemKey) => {
+                        const item = data[itemKey];
+                        if (item?.imageUrl && item.imageUrl.startsWith('http')) {
+                            const img = document.createElement("img");
+                            img.src = item.imageUrl;
+                            img.alt = `${itemKey} image`;
+                            img.style.width = "100px";
+                            img.style.margin = "10px";
+                            equippedContainer.appendChild(img);
+                        } else {
+                            console.error(`URL de imagen no válida para ${itemKey}: ${item?.imageUrl}`);
+                        }
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error al obtener ítems equipados:", error);
+                });
+        });
+    </script>
+</body>
+</html>
