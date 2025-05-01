@@ -348,6 +348,45 @@ setInterval(() => {
 
     document.getElementById("attackButton").addEventListener("click", attack);
 </script>
+<div id="equippedImagesContainer"></div>
+<script>
+   const equippedContainer = document.getElementById("equippedImagesContainer");
 
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    equippedContainer.innerText = "No has iniciado sesión.";
+    return;
+  }
+
+  const uid = user.uid;
+  const equippedRef = ref(db, `users/${uid}/equippedItems`);
+
+  get(equippedRef)
+    .then((snapshot) => {
+      if (!snapshot.exists()) {
+        equippedContainer.innerText = "No hay ítems equipados.";
+        return;
+      }
+
+      const data = snapshot.val();
+
+      ["item1", "item2", "item3"].forEach((itemKey) => {
+        const item = data[itemKey];
+        if (item?.imageUrl) {
+          const img = document.createElement("img");
+          img.src = item.imageUrl;
+          img.alt = `${itemKey} image`;
+          img.style.width = "100px";
+          img.style.margin = "10px";
+          equippedContainer.appendChild(img);
+        }
+      });
+    })
+    .catch((error) => {
+      console.error("Error al obtener ítems equipados:", error);
+    });
+});
+ 
+</script>
 </body>
 </html>
