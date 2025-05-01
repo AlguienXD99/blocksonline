@@ -100,6 +100,13 @@
                                 console.error(`URL de imagen no válida para ${itemKey}: ${item?.imageUrl}`);
                             }
 
+                            // Mostramos también el nombre del ítem
+                            if (item?.itemName) {
+                                const itemNameText = document.createElement("p");
+                                itemNameText.innerText = `Ítem: ${item.itemName}`;
+                                playerContainer.appendChild(itemNameText);
+                            }
+
                             // Mostramos también la posición del ítem
                             if (item?.position) {
                                 const positionText = document.createElement("p");
