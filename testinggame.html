@@ -329,7 +329,7 @@ function updateLeaderboard() {
     }
 }
 
-function gameLoop2() {
+function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Calcular la dirección hacia el destino
@@ -364,7 +364,7 @@ function gameLoop2() {
         }
     }
 
-    requestAnimationFrame(gameLoop2);
+    requestAnimationFrame(gameLoop);
 }
 
 // Actualizar base de datos cada segundo
