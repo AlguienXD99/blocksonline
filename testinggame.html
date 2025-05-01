@@ -91,6 +91,16 @@ backgroundImg.src = "fondo.png"; // Asegúrate de tener la imagen en la carpeta 
 backgroundImg.onload = () => {
     gameLoop(); // Iniciar el juego solo cuando la imagen de fondo haya cargado
 };
+    
+async function loadPlayerData(uid) {
+    if (cachedConfigs[uid]) return; // ya está
+
+    const config = await loadUserConfig(uid);
+    if (!config) return;
+
+    cachedConfigs[uid] = config;
+    cachedImages[uid] = await preloadEquippedImages(config.equippedItems || {});
+}
 
 async function loadUserConfig(uid) {
     const userRef = ref(db, `users/${uid}`);
@@ -133,77 +143,81 @@ function onPlayerConnected(uid, username, x = 100, y = 100) {
         health: 100,
         hasSword: false,
         userUID: uid,
-        equippedItems: {} // se llenará luego
+        equippedItems: {}
     };
 
     syncUserItemsToPlayer(uid);
+    loadPlayerData(uid); // 🆕 precargar config e imágenes
 }
     
-// Precargar imagen especial (sombrero u otro accesorio)
-const testImg = new Image();
-testImg.src = "https://example.com/tuimagen.png";
-let testImgLoaded = false;
-testImg.onload = () => {
-    testImgLoaded = true;
-};
+async function preloadEquippedImages(equippedItems) {
+    const images = {};
+    const promises = [];
 
-async function gameLoop() {
-    try {
-        ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    for (const item in equippedItems) {
+        const data = equippedItems[item];
+        if (!data.imageUrl) continue;
 
-        // Suavizar el movimiento del jugador local
-        player.x += (targetX - player.x) * 0.1;
-        player.y += (targetY - player.y) * 0.1;
+        const img = new Image();
+        img.src = data.imageUrl;
 
-        for (const id in players) {
-            const p = players[id];
+        promises.push(new Promise((resolve) => {
+            img.onload = () => {
+                images[item] = img;
+                resolve();
+            };
+        }));
+    }
 
-            // Dibujar el avatar
-            ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
-            // Mostrar nombre y vida
-            ctx.fillStyle = "black";
-            ctx.font = "14px Arial";
-            ctx.fillText(p.name, p.x - 20, p.y - 30);
-            ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
+    await Promise.all(promises);
+    return images;
+}
 
-            // Verifica UID y carga configuración
-            if (!p.userUID) continue;
+const cachedConfigs = {}; // cache para no pedir config cada vez
+const cachedImages = {};  // cache de imágenes por UID
 
-            const userConfig = await loadUserConfig(p.userUID);
-            if (!userConfig) continue;
+function gameLoop() {
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
-            const equippedItems = userConfig.equippedItems || {};
+    player.x += (targetX - player.x) * 0.1;
+    player.y += (targetY - player.y) * 0.1;
 
-            // 🆕 Guardamos en la base de datos "players/[UID]/equippedItems"
-            await saveEquippedItemsToPlayers(p.userUID, equippedItems);
+    for (const id in players) {
+        const p = players[id];
+        if (!p.userUID) continue;
 
-            // Dibujar espada si tiene
-            if (p.hasSword) {
-                ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
-            }
+        ctx.drawImage(playerImg, p.x - 25, p.y - 25, 50, 50);
+        ctx.fillStyle = "black";
+        ctx.font = "14px Arial";
+        ctx.fillText(p.name, p.x - 20, p.y - 30);
+        ctx.fillText(`HP: ${p.health}`, p.x - 20, p.y + 40);
 
-            // Dibujar ítems equipados
-            for (const item in equippedItems) {
-                const data = equippedItems[item];
-                if (!data.imageUrl) continue;
-
-                const img = new Image();
-                img.src = data.imageUrl;
-
-                img.onload = function () {
-                    let x = p.x - 25;
-                    let y = data.position === 'head' ? p.y - 70 :
-                            data.position === 'legs' ? p.y + 30 : p.y - 50;
-
-                    ctx.drawImage(img, x, y, 50, 50);
-                };
-            }
+        if (p.hasSword) {
+            ctx.drawImage(swordImg, p.x + 15, p.y, 40, 40);
         }
 
-        requestAnimationFrame(gameLoop);
-    } catch (error) {
-        console.error("Error en gameLoop:", error);
+        const uid = p.userUID;
+
+        // Config y recursos cacheados
+        const config = cachedConfigs[uid];
+        const images = cachedImages[uid];
+
+        if (config && images) {
+            for (const item in config.equippedItems) {
+                const data = config.equippedItems[item];
+                const img = images[item];
+                if (!img) continue;
+
+                let x = p.x - 25;
+                let y = data.position === 'head' ? p.y - 70 :
+                        data.position === 'legs' ? p.y + 30 : p.y - 50;
+
+                ctx.drawImage(img, x, y, 50, 50);
+            }
+        }
     }
+
+    requestAnimationFrame(gameLoop);
 }
     
 const ctx = canvas.getContext("2d");
