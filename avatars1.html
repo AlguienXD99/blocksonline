@@ -1,126 +1,182 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargar Imágenes desde Firebase</title>
-    <style>
-        body {
-            font-family: Arial;
-        }
-        #equippedImagesContainer {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .playerContainer {
-            margin: 20px;
-            text-align: center;
-        }
-        .playerContainer h3 {
-            margin: 10px 0;
-        }
-        img {
-            max-width: 100px;
-            margin: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Avatares de Jugadores</title>
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #f5f5f5;
+      text-align: center;
+    }
+
+    #equippedImagesContainer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .playerContainer {
+      margin: 20px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .avatar {
+      width: 60px;
+      margin: auto;
+    }
+
+    .part {
+      width: 60px;
+      height: 20px;
+    }
+
+    .legs {
+      display: flex;
+    }
+
+    .leg {
+      width: 30px;
+      height: 20px;
+    }
+
+    .arms {
+      display: flex;
+    }
+
+    .arm {
+      width: 15px;
+      height: 40px;
+    }
+
+    .torso {
+      width: 30px;
+      height: 40px;
+    }
+
+    .middle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
-    <h1>¡Ítems Equipados tuyos o de otros jugadores!</h1>
-    <div id="equippedImagesContainer"></div>
+  <h1>Avatares conectados a Game1</h1>
+  <div id="equippedImagesContainer"></div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
 
-        // Tu configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
-            authDomain: "virtualblocks-b7a52.firebaseapp.com",
-            databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
-            projectId: "virtualblocks-b7a52",
-            storageBucket: "virtualblocks-b7a52.firebasestorage.app",
-            messagingSenderId: "490618182453",
-            appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-        };
+    const firebaseConfig = {
+      apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+      authDomain: "virtualblocks-b7a52.firebaseapp.com",
+      databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+      projectId: "virtualblocks-b7a52",
+      storageBucket: "virtualblocks-b7a52.appspot.com",
+      messagingSenderId: "490618182453",
+      appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+    };
 
-        // Inicialización de Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const auth = getAuth(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
 
-        // Contenedor donde se mostrarán los ítems equipados
-        const equippedContainer = document.getElementById("equippedImagesContainer");
+    const equippedContainer = document.getElementById("equippedImagesContainer");
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                equippedContainer.innerText = "No has iniciado sesión.";
-                return;
-            }
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        equippedContainer.innerText = "No has iniciado sesión.";
+        return;
+      }
 
-            const uid = user.uid;
-            const usersRef = ref(db, 'users');
+      const usersRef = ref(db, 'users');
 
-            // Escuchamos los cambios en tiempo real en los usuarios
-            onValue(usersRef, (snapshot) => {
-                if (!snapshot.exists()) {
-                    equippedContainer.innerText = "No hay usuarios conectados.";
-                    return;
-                }
+      onValue(usersRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          equippedContainer.innerText = "No hay usuarios conectados.";
+          return;
+        }
 
-                const usersData = snapshot.val();
-                equippedContainer.innerHTML = ''; // Limpiar el contenedor antes de actualizar
+        equippedContainer.innerHTML = ''; // limpiar
 
-                // Filtramos y mostramos los ítems solo para los usuarios que están conectados al juego
-                Object.keys(usersData).forEach((userKey) => {
-                    const user = usersData[userKey];
-                    if (user.isConnectedToGame1) {
-                        const nickname = user.nickname;  // Aquí cambiamos 'nicknames' por 'nickname'
-                        const equippedItems = user.equippedItems;
+        const usersData = snapshot.val();
 
-                        // Creamos un contenedor para los ítems de cada jugador
-                        const playerContainer = document.createElement("div");
-                        playerContainer.classList.add("playerContainer");
+        Object.keys(usersData).forEach((userKey) => {
+          const userData = usersData[userKey];
 
-                        const playerName = document.createElement("h3");
-                        playerName.innerText = nickname;
-                        playerContainer.appendChild(playerName);
+          if (userData.isConnectedToGame1 && userData.avatarConfig) {
+            const nickname = userData.nickname || "Jugador";
+            const config = userData.avatarConfig;
 
-                        // Iteramos sobre los ítems equipados de cada jugador
-                        for (let itemKey in equippedItems) {
-                            const item = equippedItems[itemKey];
-                            if (item?.imageUrl && item.imageUrl.startsWith('http')) {
-                                const img = document.createElement("img");
-                                img.src = item.imageUrl;
-                                img.alt = `${itemKey} image`;
-                                playerContainer.appendChild(img);
-                            } else {
-                                console.error(`URL de imagen no válida para ${itemKey}: ${item?.imageUrl}`);
-                            }
+            const playerContainer = document.createElement("div");
+            playerContainer.classList.add("playerContainer");
 
-                            // Mostramos también el nombre del ítem
-                            if (item?.itemName) {
-                                const itemNameText = document.createElement("p");
-                                itemNameText.innerText = `Ítem: ${item.itemName}`;
-                                playerContainer.appendChild(itemNameText);
-                            }
+            const playerName = document.createElement("h3");
+            playerName.textContent = nickname;
+            playerContainer.appendChild(playerName);
 
-                            // Mostramos también la posición del ítem
-                            if (item?.position) {
-                                const positionText = document.createElement("p");
-                                positionText.innerText = `Posición: ${item.position}`;
-                                playerContainer.appendChild(positionText);
-                            }
-                        }
+            // Crear el avatar visual
+            const avatar = document.createElement("div");
+            avatar.classList.add("avatar");
 
-                        // Añadimos los ítems del jugador al contenedor principal
-                        equippedContainer.appendChild(playerContainer);
-                    }
-                });
-            });
+            const head = document.createElement("div");
+            head.classList.add("part");
+            head.style.backgroundColor = config.head || "gray";
+            avatar.appendChild(head);
+
+            const armsContainer = document.createElement("div");
+            armsContainer.classList.add("arms");
+
+            const leftArm = document.createElement("div");
+            leftArm.classList.add("arm");
+            leftArm.style.backgroundColor = config.leftArm || "gray";
+
+            const torso = document.createElement("div");
+            torso.classList.add("torso");
+            torso.style.backgroundColor = config.torso || "gray";
+
+            const rightArm = document.createElement("div");
+            rightArm.classList.add("arm");
+            rightArm.style.backgroundColor = config.rightArm || "gray";
+
+            armsContainer.appendChild(leftArm);
+            armsContainer.appendChild(torso);
+            armsContainer.appendChild(rightArm);
+            avatar.appendChild(armsContainer);
+
+            const legsContainer = document.createElement("div");
+            legsContainer.classList.add("legs");
+
+            const leftLeg = document.createElement("div");
+            leftLeg.classList.add("leg");
+            leftLeg.style.backgroundColor = config.leftLeg || "gray";
+
+            const rightLeg = document.createElement("div");
+            rightLeg.classList.add("leg");
+            rightLeg.style.backgroundColor = config.rightLeg || "gray";
+
+            legsContainer.appendChild(leftLeg);
+            legsContainer.appendChild(rightLeg);
+            avatar.appendChild(legsContainer);
+
+            playerContainer.appendChild(avatar);
+            equippedContainer.appendChild(playerContainer);
+          }
         });
-    </script>
+      });
+    });
+  </script>
 </body>
 </html>
