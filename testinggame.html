@@ -119,8 +119,13 @@ async function saveEquippedItemsToPlayers(uid, equippedItems) {
         }
     }
 
-    const playerRef = ref(db, `players/${uid}/equippedItems`);
-    await set(playerRef, extractedUrls);
+    try {
+        const playerRef = ref(db, `players/${uid}/equippedItems`);
+        await set(playerRef, extractedUrls);
+        console.log("✅ Equipos guardados correctamente:", extractedUrls);
+    } catch (err) {
+        console.error("❌ Error al guardar los items:", err);
+    }
 }
 
 async function syncUserItemsToPlayer(uid) {
