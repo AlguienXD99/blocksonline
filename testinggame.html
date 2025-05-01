@@ -350,7 +350,9 @@ setInterval(() => {
 </script>
 <div id="equippedImagesContainer"></div>
 <script>
-   const equippedContainer = document.getElementById("equippedImagesContainer");
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+const auth = getAuth();  // o getAuth(app) si usas initializeApp
+const equippedContainer = document.getElementById("equippedImagesContainer");
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
