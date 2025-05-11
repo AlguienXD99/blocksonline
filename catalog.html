@@ -41,8 +41,8 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getDatabase(app);
-        const firestore = getFirestore(app); // si ya no lo tienes inicializado
+        const rtdb = getDatabase(app);
+        const db = getFirestore(app); // si ya no lo tienes inicializado
         
         // 🔹 Verificar si el usuario está logueado
         onAuthStateChanged(auth, (user) => {
