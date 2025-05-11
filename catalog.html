@@ -100,12 +100,14 @@ async function changeAvatarColor(bodyPart, color) {
     }
 }
 
-async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
+async function buyItem(itemName) {
     const user = auth.currentUser;
     if (!user) return;
 
     const userRef = ref(db, "users/" + user.uid);
-    const userData = (await get(userRef)).val();
+    const userDataSnapshot = await get(userRef);
+    const userData = userDataSnapshot.val();
+
     if (!userData) {
         alert("Error: No user data found!");
         return;
@@ -113,18 +115,6 @@ async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
 
     let inventory = userData.inventory || [];
     let blocksgold = userData.blocksgold || 0;
-
-    // Si ya lo tiene en inventario
-    if (inventory.some(item => item.name === itemName)) {
-        alert("You already own this item!");
-        return;
-    }
-
-    // Si no tiene suficientes Blocksgolds
-    if (blocksgold < itemPrice) {
-        alert("Not enough Blocksgolds!");
-        return;
-    }
 
     // 🔸 Obtener los datos del ítem desde Firestore
     const itemDocRef = doc(firestore, "catalog", itemName);
@@ -136,20 +126,29 @@ async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
     }
 
     const itemData = itemSnapshot.data();
+    const itemPrice = itemData.price; // <-- 🔹 Asegúrate de tener este campo en Firestore
 
-    // 🔸 Usamos los datos de Firestore
+    if (inventory.some(item => item.name === itemName)) {
+        alert("You already own this item!");
+        return;
+    }
+
+    if (blocksgold < itemPrice) {
+        alert("Not enough Blocksgolds!");
+        return;
+    }
+
     const newItem = {
         name: itemName,
         imageUrl: itemData.imageUrl,
         position: itemData.position
     };
 
-    // 🔸 Descontamos blocksgolds y actualizamos inventario en RTDB
+    // 🔸 Descontamos y actualizamos
     blocksgold -= itemPrice;
     inventory.push(newItem);
 
     await update(userRef, {
-        name: itemName,
         inventory: inventory,
         blocksgold: blocksgold
     });
