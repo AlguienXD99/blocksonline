@@ -25,7 +25,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
         import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
-
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "firebase/firestore"; 
+        
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
@@ -41,7 +42,8 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
-
+        const firestore = getFirestore(app); // si ya no lo tienes inicializado
+        
         // 🔹 Verificar si el usuario está logueado
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -74,7 +76,7 @@
         }
     });
 }
-        // 🔹 Función para cambiar el color del avatar
+// 🔹 Función para cambiar el color del avatar
 async function changeAvatarColor(bodyPart, color) {
     if (!color) {
         console.error(`Error: el color para ${bodyPart} es inválido.`);
@@ -98,51 +100,61 @@ async function changeAvatarColor(bodyPart, color) {
     }
 }
 
-// 🔹 Función para comprar artículos con Blocksgolds
 async function buyItem(itemName, itemPrice, imageUrl, itemPosition) {
     const user = auth.currentUser;
-    if (user) {
-        const userRef = ref(db, "users/" + user.uid);
-        const userData = (await get(userRef)).val();
+    if (!user) return;
 
-        if (!userData) {
-            alert("Error: No user data found!");
-            return;
-        }
-
-        let inventory = userData.inventory || [];
-        let blocksgold = userData.blocksgold || 0;
-
-        // Verificar si el usuario ya tiene el artículo
-        if (inventory.some(item => item.name === itemName)) {
-            alert("You already own this item!");
-            return;
-        }
-
-        // Verificar si tiene suficientes Blocksgolds
-        if (blocksgold < itemPrice) {
-            alert("Not enough Blocksgolds!");
-            return;
-        }
-
-        // Descontar Blocksgolds y añadir el artículo al inventario
-        blocksgold -= itemPrice;
-
-        // Crear un objeto para el artículo con su nombre, imagen y posición
-        const newItem = {
-            name: itemName,
-            imageUrl: imageUrl,
-            position: itemPosition
-        };
-
-        // Añadir el nuevo artículo al inventario
-        inventory.push(newItem);
-
-        // Actualizar en la base de datos
-        await update(userRef, { inventory: inventory, blocksgold: blocksgold });
-
-        alert(`${itemName} has been added to your inventory!`);
+    const userRef = ref(db, "users/" + user.uid);
+    const userData = (await get(userRef)).val();
+    if (!userData) {
+        alert("Error: No user data found!");
+        return;
     }
+
+    let inventory = userData.inventory || [];
+    let blocksgold = userData.blocksgold || 0;
+
+    // Si ya lo tiene en inventario
+    if (inventory.some(item => item.name === itemName)) {
+        alert("You already own this item!");
+        return;
+    }
+
+    // Si no tiene suficientes Blocksgolds
+    if (blocksgold < itemPrice) {
+        alert("Not enough Blocksgolds!");
+        return;
+    }
+
+    // 🔸 Obtener los datos del ítem desde Firestore
+    const itemDocRef = doc(firestore, "catalog", itemName);
+    const itemSnapshot = await getDoc(itemDocRef);
+
+    if (!itemSnapshot.exists()) {
+        alert("Item not found in catalog!");
+        return;
+    }
+
+    const itemData = itemSnapshot.data();
+
+    // 🔸 Usamos los datos de Firestore
+    const newItem = {
+        name: itemName,
+        imageUrl: itemData.imageUrl,
+        position: itemData.position
+    };
+
+    // 🔸 Descontamos blocksgolds y actualizamos inventario en RTDB
+    blocksgold -= itemPrice;
+    inventory.push(newItem);
+
+    await update(userRef, {
+        name: itemName,
+        inventory: inventory,
+        blocksgold: blocksgold
+    });
+
+    alert(`${itemName} has been added to your inventory!`);
 }
 
 function showToast(message) {
