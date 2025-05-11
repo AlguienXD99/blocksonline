@@ -23,8 +23,8 @@
     </style>
     <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 // Firebase Configuration
@@ -41,11 +41,15 @@ const firebaseConfig = {
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getDatabase(app); // Solo Realtime Database
 
-// Inicializa Firestore si es necesario
-const firestore = getFirestore(app); // Firestore inicializado
-        
+// Inicializa Realtime Database
+const db = getDatabase(app);
+
+// Inicializa Firestore (si lo necesitas)
+const firestore = getFirestore(app);
+
+// Aquí puedes agregar más lógica relacionada con autenticación o base de datos, según sea necesario
+
         // 🔹 Verificar si el usuario está logueado
         onAuthStateChanged(auth, (user) => {
             if (user) {
