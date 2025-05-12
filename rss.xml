@@ -1,48 +1,48 @@
 <?xml-stylesheet type="text/xsl" href="style.xsl"?>
 <rss version="2.0">
     <channel>
-        <title>BlocksOnline Blog</title>
-        <link>https://blocksonline.neocities.org</link>
+        <title>BLOXPAST2D Blog</title>
+        <link>https://bloxpast2d.neocities.org</link>
         <description>Noticias y actualizaciones de BlocksOnline</description>
         <item>
-            <title>Primer Post de BlocksOnline</title>
-            <link>https://blocksonline.neocities.org/posts/post1.html</link>
-            <description>¡Bienvenidos al blog de BlocksOnline! Aquí publicaremos noticias y actualizaciones...</description>
+            <title>Primer Post de BLOXPAST2D</title>
+            <link>https://bloxpast2d.neocities.org/posts/post1.html</link>
+            <description>¡Bienvenidos al blog de BLOXPAST2D! Aquí publicaremos noticias y actualizaciones...</description>
             <pubDate>Mon, 17 Mar 2025 12:00:00 GMT</pubDate>
         </item>
         <item>
             <title>Segunda Actualización</title>
-            <link>https://blocksonline.neocities.org/posts/post2.html</link>
+            <link>https://bloxpast2d.neocities.org/posts/post2.html</link>
             <description>Hoy hemos mejorado la plataforma con nuevas características...</description>
             <pubDate>Tue, 18 Mar 2025 12:00:00 GMT</pubDate>
         </item>
         <item>
             <title>Nuevas Funciones</title>
-            <link>https://blocksonline.neocities.org/posts/post3.html</link>
-            <description>BlocksOnline ahora tiene soporte para scripts personalizados...</description>
+            <link>https://bloxpast2d.neocities.org/posts/post3.html</link>
+            <description>BLOXPAST2D ahora tiene soporte para scripts personalizados...</description>
             <pubDate>Wed, 19 Mar 2025 12:00:00 GMT</pubDate>
         </item>
         <item>
             <title>Mantenimiento</title>
-            <link>https://blocksonline.neocities.org/posts/post4.html</link>
-            <description>GitHub el día de hoy se ha caído por unos minutos, actualmente ya se solucionó el problema, sin embargo, BLOCKSONLINE fue afectado debido a que el código de nuestros juegos se encuentra almacenado en dicha plataforma, causando un cierre temporal de BLOCKSONLINE... </description>
+            <link>https://bloxpast2d.neocities.org/posts/post4.html</link>
+            <description>GitHub el día de hoy se ha caído por unos minutos, actualmente ya se solucionó el problema, sin embargo, BLOXPAST2D fue afectado debido a que el código de nuestros juegos se encuentra almacenado en dicha plataforma, causando un cierre temporal de BLOXPAST2D... </description>
             <pubDate>Thu, 20 Mar 2025 12:00:00 GMT</pubDate>
         </item>
         <item>
             <title>NEW REDEEM SYSTEM!!</title>
-            <link>https://blocksonline.neocities.org/posts/post5.html</link>
-            <description>BLOCKSONLINE has built its redeem system, buy your giftcards for rewards only for $1.50 USD!!... </description>
+            <link>https://bloxpast2d.neocities.org/posts/post5.html</link>
+            <description>BLOXPAST2D has built its redeem system, buy your giftcards for rewards only for $1.50 USD!!... </description>
             <pubDate>Wed, 02 Apr 2025 15:33:00 GMT</pubDate>
         </item>
         <item>
             <title>APRIL FOOLS SPLASH TEXTS!!!</title>
-            <link>https://blocksonline.neocities.org/posts/post6.html</link>
-            <description>NEW: BLOCKSONLINE has added april fools splash texts, it are purple!... </description>
+            <link>https://bloxpast2d.neocities.org/posts/post6.html</link>
+            <description>NEW: BLOXPAST2D has added april fools splash texts, it are purple!... </description>
             <pubDate>Thu, 03 Apr 2025 16:25:00 GMT</pubDate>
         </item>
         <item>
             <title>GREAT UPDATE</title>
-            <link>https://blocksonline.neocities.org/posts/post7.html</link>
+            <link>https://bloxpast2d.neocities.org/posts/post7.html</link>
             <description>NEW: Moderation added, nicknames on games!... </description>
             <pubDate>Sun, 06 Apr 2025 17:12:00 GMT</pubDate>
         </item>
