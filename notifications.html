@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Notificaciones con Firebase</title>
+</head>
+<body>
+  <h1>FCM con HTML simple</h1>
+  <button id="activar">Activar notificaciones</button>
+
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+
+  <script>
+    // Reemplaza con tu configuración de Firebase
+    const firebaseConfig = {
+    apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+    authDomain: "virtualblocks-b7a52.firebaseapp.com",
+    databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+    projectId: "virtualblocks-b7a52",
+    storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+    messagingSenderId: "490618182453",
+    appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const messaging = firebase.messaging();
+
+    document.getElementById('activar').addEventListener('click', () => {
+      Notification.requestPermission().then((permiso) => {
+        if (permiso === 'granted') {
+          messaging.getToken({
+            vapidKey: "BGm0Rj7LI22_b5sGssx851VEE23ssK_Q1ZuAz06EvuNvWB-aC4Ock35JBs5y79wF2URQshGO-eyM61OUdu-cGHI"
+          }).then((token) => {
+            console.log("Token de dispositivo:", token);
+            alert("Notificaciones activadas. Revisa la consola.");
+            // Aquí podrías enviar el token a tu servidor
+          }).catch((err) => {
+            console.error("Error al obtener el token:", err);
+          });
+        } else {
+          alert("Permiso denegado.");
+        }
+      });
+    });
+
+    // Recibe mensajes en primer plano
+    messaging.onMessage((payload) => {
+      console.log("Mensaje recibido:", payload);
+      alert("Notificación: " + payload.notification.title + "\n" + payload.notification.body);
+    });
+  </script>
+</body>
+</html>
