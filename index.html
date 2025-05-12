@@ -7,6 +7,7 @@
     <title>Register - BLOCKSONLINE!</title>
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
+    <script src="https://hcaptcha.com/1/api.js" async defer></script> <!-- Aquí agregamos la API de hCaptcha -->
     <style>
         body {
             font-family: Verdana, sans-serif;
@@ -53,12 +54,14 @@
 </head>
 <body>
 
-    <h1>Register to BLOCKSONLINE!</h1>
+    <h1>Register to BLOXPAST2D!</h1>
 
     <div id="register-box">
         <h3>Create an Account</h3>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="password" placeholder="Password">
+        <!-- Aquí agregamos el widget de hCaptcha -->
+        <div class="h-captcha" data-sitekey="b21e396a-4340-43ae-8c90-0a96a2d283a8"></div> <!-- Sustituye "TU_CLAVE_PUBLICA" por tu clave pública -->
         <button onclick="register()">Register</button>
         <p class="message" id="message"></p>
     </div>
@@ -90,6 +93,16 @@
     const password = document.getElementById('password').value;
     const messageBox = document.getElementById('message');
 
+    // Obtenemos la respuesta del hCaptcha
+    const captchaResponse = hcaptcha.getResponse();
+
+    // Verificamos si el usuario completó el CAPTCHA
+    if (!captchaResponse) {
+        messageBox.style.color = "red";
+        messageBox.innerText = "❌ Please complete the CAPTCHA.";
+        return;
+    }
+      
     createUserWithEmailAndPassword(auth, email, password)
       .then(async (userCredential) => {
         const user = userCredential.user;
