@@ -33,7 +33,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+import { getDatabase, ref, onValue, set, update, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
 const app = initializeApp({
@@ -70,7 +70,10 @@ onAuthStateChanged(auth, user => {
   set(selfRef, { x:100, y:100 });
   userRef.update({ isConnectedToGame1: true });
   
-  userRef.child("nickname").once('value', s => { me.nickname = s.val() || "Anon"; });
+ // Usa esto (forma correcta modular):
+get(child(ref(db), `users/${me.id}/nickname`)).then(s => {
+  me.nickname = s.exists() ? s.val() : "Anon";
+});
   onValue(userRef, s => {
     const d = s.val(); if (!d) return;
     me.avatarConfig = d.avatarConfig || {};
