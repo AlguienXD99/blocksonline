@@ -105,7 +105,7 @@ onValue(ref(db, 'players'), snap => {
   async function loadPlayersWithNicknames(data) {
 
   const nicknamePromises = Object.keys(data || {}).map(async (uid) => {
-    const userSnap = await get(child(ref(db), users/${uid}/nickname));
+    const userSnap = await get(child(ref(db), `users/${uid}/nickname`));
     const nickname = userSnap.exists() ? userSnap.val() : uid;
 
     players[uid] = {
@@ -120,7 +120,7 @@ onValue(ref(db, 'players'), snap => {
 }
 
   setInterval(() => {
-    set(selfRef, { x: me.x, y: me.y });
+    update(selfRef, { x: me.x, y: me.y });
     update(userRefPath, { blocksgold: me.blocksgold });
   }, 500);
 });
