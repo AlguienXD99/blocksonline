@@ -131,6 +131,7 @@ onValue(playersRef, (snapshot) => {
     update(userRefPath, { blocksgold: me.blocksgold });
   }, 500);
 });
+render(); // ← Esto inicia el bucle de dibujo continuo
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
