@@ -54,7 +54,8 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
-
+  
+const playersRef = ref(db, "players");
 let players = {}, me = {
   id: null, x: 100, y: 100,
   color: "#888", nickname: "Anon",
@@ -78,8 +79,8 @@ onAuthStateChanged(auth, user => {
   if (!user) return;
 
   me.id = user.uid;
-  const userRefPath = ref(db, users/${me.id});
-  const selfRef = ref(db, players/${me.id});
+const userRefPath = ref(db, `users/${me.id}`);
+const selfRef = ref(db, `players/${me.id}`);
 
   set(selfRef, { x: me.x, y: me.y });
 
@@ -102,7 +103,6 @@ onValue(ref(db, 'players'), snap => {
 });
 
   async function loadPlayersWithNicknames(data) {
-  players = {};
 
   const nicknamePromises = Object.keys(data || {}).map(async (uid) => {
     const userSnap = await get(child(ref(db), users/${uid}/nickname));
