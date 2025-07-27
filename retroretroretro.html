@@ -108,12 +108,16 @@ async function loadPlayersWithNicknames(data) {
     const nickname = userSnap.exists() ? userSnap.val() : uid;
 
     if (!players[uid]) players[uid] = {};
-    players[uid] = {
-      ...players[uid],
-      ...data[uid],
-      nickname: nickname
-    };
-  });
+const userDataSnap = await get(child(ref(db), `users/${uid}`));
+const userData = userDataSnap.exists() ? userDataSnap.val() : {};
+
+players[uid] = {
+  ...players[uid],
+  ...data[uid],
+  nickname: nickname,
+  avatarConfig: userData.avatarConfig || {},
+  equippedItems: userData.equippedItems || {}
+};
 
   await Promise.all(nicknamePromises);
   updateLeaderboard();
@@ -131,7 +135,7 @@ function render() {
 
   for (let uid in players) {
     const p = players[uid];
-    ctx.fillStyle = uid === me.id ? "#ff0" : "#0f0";
+    ctx.fillStyle = p.avatarConfig?.torso || (uid === me.id ? "#ff0" : "#0f0");
     ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
     ctx.fillStyle = "#fff";
     ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x - 15, p.y - 15);
