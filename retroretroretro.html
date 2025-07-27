@@ -162,7 +162,6 @@ function updatePosition() {
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40;
 
-  // Offsets para posicionar cada parte
   const offs = {
     head: [0, -1.5 * size],
     torso: [0, 0],
@@ -172,7 +171,6 @@ function drawAvatarOverlay(x, y, config, equipped) {
     rightLeg: [0.3 * size, 1.3 * size]
   };
 
-  // Tamaños por parte (ancho, alto)
   const sizes = {
     head: [size, size],
     torso: [size * 0.9, size * 1.2],
@@ -190,8 +188,8 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillStyle = config[part] || "#555";
     ctx.fillRect(x + dx - w / 2, y + dy - h / 2, w, h);
   }
-}
 
+  // 👇 Este bloque debe ir dentro de la función, aquí está bien
   let dy = 30;
   for (let key in equipped) {
     const it = equipped[key];
