@@ -98,30 +98,24 @@ const selfRef = ref(db, `players/${me.id}`);
     document.getElementById("bgCount").innerText = me.blocksgold;
   });
 
-onValue(ref(db, 'players'), snap => {
-  loadPlayersWithNicknames(snap.val());
-});
-
-async function loadPlayersWithNicknames(data) {
+onValue(ref(db, 'players'), async snap => {
+  const data = snap.val();
   const nicknamePromises = Object.keys(data || {}).map(async (uid) => {
-   const userSnap = await get(child(ref(db), `users/${uid}/nickname`));
-    const nickname = userSnap.exists() ? userSnap.val() : uid;
+    const userSnap = await get(child(ref(db), `users/${uid}`));
+    const userData = userSnap.exists() ? userSnap.val() : {};
 
-    if (!players[uid]) players[uid] = {};
-const userDataSnap = await get(child(ref(db), `users/${uid}`));
-const userData = userDataSnap.exists() ? userDataSnap.val() : {};
-
-players[uid] = {
-  ...players[uid],
-  ...data[uid],
-  nickname: nickname,
-  avatarConfig: userData.avatarConfig || {},
-  equippedItems: userData.equippedItems || {}
-};
+    players[uid] = {
+      ...players[uid],
+      ...data[uid],
+      nickname: userData.nickname || uid,
+      avatarConfig: userData.avatarConfig || {},
+      equippedItems: userData.equippedItems || {}
+    };
+  });
 
   await Promise.all(nicknamePromises);
   updateLeaderboard();
-}
+});
 
   setInterval(() => {
     update(selfRef, { x: me.x, y: me.y });
