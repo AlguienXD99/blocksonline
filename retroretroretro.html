@@ -162,12 +162,12 @@ function updatePosition() {
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40, step = 20;  
 const offs = {
-  head: [0, -2 * size],
+  head: [0, -1.5 * size],             // Más cerca del torso
   torso: [0, 0],
-  leftArm: [-1 * size, -0.5 * size],    // Más cerca al torso
-  rightArm: [1 * size, -0.5 * size],    // Más cerca al torso
-  leftLeg: [-0.5 * size, 1.5 * size],
-  rightLeg: [0.5 * size, 1.5 * size]
+  leftArm: [-0.8 * size, -0.2 * size], // Más delgados y más pegados
+  rightArm: [0.8 * size, -0.2 * size],
+  leftLeg: [-0.3 * size, 1.3 * size],  // Pegadas al torso
+  rightLeg: [0.3 * size, 1.3 * size]
 };
   
 const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
