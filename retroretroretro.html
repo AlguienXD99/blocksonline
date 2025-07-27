@@ -34,14 +34,14 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, update, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
   authDomain: "virtualblocks-b7a52.firebaseapp.com",
   databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
   projectId: "virtualblocks-b7a52",
-  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  storageBucket: "virtualblocks-b7a52.appspot.com",
   messagingSenderId: "490618182453",
   appId: "1:490618182453:web:93385819c7ff08537d8a7c"
 };
@@ -50,11 +50,15 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
 
+// AUTENTICACIÓN ANÓNIMA
+signInAnonymously(auth).catch(console.error);
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+let tileSize = 20;
 let players = {}, me = {
   id: null, x: 100, y: 100,
   color: "#888", nickname: "Anon",
@@ -65,7 +69,6 @@ const speed = 3;
 let currentMini = null;
 let playersCache = {};
 
-// Movimiento
 addEventListener("mousemove", e => {
   targetX = e.clientX;
   targetY = e.clientY;
@@ -74,16 +77,15 @@ addEventListener("keydown", e => {
   if (e.key === "e" && me.id) toggleEquip();
 });
 
-// Firebase Auth y carga de datos
 onAuthStateChanged(auth, user => {
   if (!user) return;
 
   me.id = user.uid;
   const userRefPath = ref(db, `users/${me.id}`);
   const selfRef = ref(db, `players/${me.id}`);
+  const playersRef = ref(db, "players");
 
   set(selfRef, { x: me.x, y: me.y });
-
   update(userRefPath, { isConnectedToGame1: true });
 
   get(child(ref(db), `users/${me.id}/nickname`)).then(s => {
@@ -98,64 +100,47 @@ onAuthStateChanged(auth, user => {
     document.getElementById("bgCount").innerText = me.blocksgold;
   });
 
-onValue(ref(db, 'players'), snap => {
-  loadPlayersWithNicknames(snap.val());
-});
-
-  async function loadPlayersWithNicknames(data) {
-  players = {};
-
-  const nicknamePromises = Object.keys(data || {}).map(async (uid) => {
-    const userSnap = await get(child(ref(db), `users/${uid}/nickname`));
-    const nickname = userSnap.exists() ? userSnap.val() : uid;
-
-    players[uid] = {
-      ...data[uid],
-      nickname: nickname
-    };
+  onValue(playersRef, snap => {
+    loadPlayersWithNicknames(snap.val());
+    playersCache = snap.val() || {};
   });
 
-  await Promise.all(nicknamePromises);
-
-  updateLeaderboard();
-}
-onValue(playersRef, (snapshot) => {
-  const playersData = snapshot.val();
-  if (playersData) {
-    playersCache = playersData;
+  async function loadPlayersWithNicknames(data) {
+    players = {};
+    const promises = Object.keys(data || {}).map(async uid => {
+      const nickSnap = await get(child(ref(db), `users/${uid}/nickname`));
+      const nickname = nickSnap.exists() ? nickSnap.val() : uid;
+      players[uid] = { ...data[uid], nickname };
+    });
+    await Promise.all(promises);
+    updateLeaderboard();
   }
-});
 
   setInterval(() => {
     set(selfRef, { x: me.x, y: me.y });
     update(userRefPath, { blocksgold: me.blocksgold });
   }, 500);
+
+  requestAnimationFrame(render);
 });
-render(); // ← Esto inicia el bucle de dibujo continuo
 
 function render() {
+  updatePosition();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (const key in playersCache) {
-    const otherPlayer = playersCache[key];
-    if (!otherPlayer || !otherPlayer.x || !otherPlayer.y) continue;
+    const p = playersCache[key];
+    const x = p.x, y = p.y;
 
-    const x = otherPlayer.x * tileSize;
-    const y = otherPlayer.y * tileSize;
+    ctx.fillStyle = (key === me.id) ? "blue" : "red";
+    ctx.fillRect(x - tileSize / 2, y - tileSize / 2, tileSize, tileSize);
 
-    if (key === userId) {
-      ctx.fillStyle = "blue";
-    } else {
-      ctx.fillStyle = "red";
-    }
-
-    ctx.fillRect(x, y, tileSize, tileSize);
-    // Nickname
-    if (nicknames[key]) {
-      ctx.fillStyle = "white";
-      ctx.fillText(nicknames[key], x, y - 5);
-    }
+    const name = players[key]?.nickname || "Anon";
+    ctx.fillStyle = "white";
+    ctx.fillText(name, x - name.length * 3, y - 10);
   }
+
+  if (currentMini && currentMini.drawZone) currentMini.drawZone();
 
   requestAnimationFrame(render);
 }
@@ -170,29 +155,6 @@ function updatePosition() {
   }
 }
 
-function drawAvatarOverlay(x, y, config, equipped) {
-  const size = 40, step = 20;
-  const offs = {
-    head: [0, -step], torso: [0, 0],
-    leftArm: [-step, 0], rightArm: [step, 0],
-    leftLeg: [-step, step], rightLeg: [step, step]
-  };
-  for (let part in offs) {
-    ctx.fillStyle = config[part] || "#555";
-    ctx.fillRect(x + offs[part][0] - size / 2, y + offs[part][1] - size / 2, size, size);
-  }
-
-  let dy = 30;
-  for (let key in equipped) {
-    const it = equipped[key];
-    if (!it || !it.imageUrl) continue;
-    const img = new Image();
-    img.src = it.imageUrl;
-    img.onload = () => ctx.drawImage(img, x - 15, y + dy, 30, 30);
-    dy += 35;
-  }
-}
-
 function updateLeaderboard() {
   let html = "<b>Jugadores</b><br>";
   for (let uid in players) {
@@ -201,7 +163,7 @@ function updateLeaderboard() {
   document.getElementById("leaderboard").innerHTML = html;
 }
 
-// MINIJUEGOS
+// --- MINIJUEGOS ---
 const minigames = {
   colorTile: {
     title: "Pisa el color correcto",
