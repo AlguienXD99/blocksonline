@@ -160,22 +160,36 @@ function updatePosition() {
 }
 
 function drawAvatarOverlay(x, y, config, equipped) {
-  const size = 40, step = 20;  
-const offs = {
-  head: [0, -1.5 * size],             // Más cerca del torso
-  torso: [0, 0],
-  leftArm: [-0.8 * size, -0.2 * size], // Más delgados y más pegados
-  rightArm: [0.8 * size, -0.2 * size],
-  leftLeg: [-0.3 * size, 1.3 * size],  // Pegadas al torso
-  rightLeg: [0.3 * size, 1.3 * size]
-};
-  
-const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
+  const size = 40;
 
-for (let part of renderOrder) {
-  const [dx, dy] = offs[part];
-  ctx.fillStyle = config[part] || "#555";
-  ctx.fillRect(x + dx, y + dy, size, size);
+  // Offsets para posicionar cada parte
+  const offs = {
+    head: [0, -1.5 * size],
+    torso: [0, 0],
+    leftArm: [-0.6 * size, 0],
+    rightArm: [0.6 * size, 0],
+    leftLeg: [-0.3 * size, 1.3 * size],
+    rightLeg: [0.3 * size, 1.3 * size]
+  };
+
+  // Tamaños por parte (ancho, alto)
+  const sizes = {
+    head: [size, size],
+    torso: [size * 0.9, size * 1.2],
+    leftArm: [size * 0.4, size * 1.1],
+    rightArm: [size * 0.4, size * 1.1],
+    leftLeg: [size * 0.4, size * 1.2],
+    rightLeg: [size * 0.4, size * 1.2]
+  };
+
+  const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
+
+  for (let part of renderOrder) {
+    const [dx, dy] = offs[part];
+    const [w, h] = sizes[part];
+    ctx.fillStyle = config[part] || "#555";
+    ctx.fillRect(x + dx - w / 2, y + dy - h / 2, w, h);
+  }
 }
 
   let dy = 30;
