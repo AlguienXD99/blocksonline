@@ -162,24 +162,24 @@ function updatePosition() {
 
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40;
-  const headSize = 26;
+  const headSize = 28; // Tamaño más cercano al torso
 
   const offs = {
-    head: [-(headSize) / 2, -size * 1.1], // cabeza más cercana al torso
-    torso: [-size * 0.45, 0],             // centrado
-    leftArm: [-size * 0.8, 0],
-    rightArm: [size * 0.8, 0],
-    leftLeg: [-size * 0.25, size * 1.2],
-    rightLeg: [size * 0.25, size * 1.2]
+    head: [-(headSize - size) / 2, -0.95 * size], // Más unido al torso
+    torso: [0, 0],
+    leftArm: [-0.75 * size, 0],
+    rightArm: [0.75 * size, 0],
+    leftLeg: [-0.25 * size, 1.2 * size],
+    rightLeg: [0.25 * size, 1.2 * size]
   };
 
   const sizes = {
     head: [headSize, headSize],
     torso: [size * 0.9, size * 1.2],
-    leftArm: [size * 0.3, size * 1.1],
-    rightArm: [size * 0.3, size * 1.1],
-    leftLeg: [size * 0.25, size * 1.2],
-    rightLeg: [size * 0.25, size * 1.2]
+    leftArm: [size * 0.35, size * 1.1],
+    rightArm: [size * 0.35, size * 1.1],
+    leftLeg: [size * 0.32, size * 1.15],
+    rightLeg: [size * 0.32, size * 1.15]
   };
 
   const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
@@ -191,7 +191,7 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillRect(x + dx, y + dy, w, h);
   }
 
-  // Mostrar objetos equipados debajo del avatar
+  // Equipamiento
   let dy = 30;
   for (let key in equipped) {
     const it = equipped[key];
