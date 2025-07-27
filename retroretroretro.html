@@ -108,11 +108,12 @@ onValue(ref(db, 'players'), snap => {
     const userSnap = await get(child(ref(db), `users/${uid}/nickname`));
     const nickname = userSnap.exists() ? userSnap.val() : uid;
 
-    players[uid] = {
-      ...data[uid],
-      nickname: nickname
-    };
-  });
+if (!players[uid]) players[uid] = {};
+players[uid] = {
+  ...players[uid],
+  ...data[uid],
+  nickname: nickname
+};
 
   await Promise.all(nicknamePromises);
 
