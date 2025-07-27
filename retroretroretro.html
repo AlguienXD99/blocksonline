@@ -163,12 +163,12 @@ function updatePosition() {
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40, step = 20;  
 const offs = {
-  head: [0, -2 * size],
-  torso: [0, 0],
-  leftArm: [-1.5 * size, -0.5 * size],
-  rightArm: [1.5 * size, -0.5 * size],
-  leftLeg: [-0.5 * size, 1.5 * size],
-  rightLeg: [0.5 * size, 1.5 * size]
+  head: [0, -2 * size],              // cabeza encima del torso
+  torso: [0, -size],                 // torso justo debajo de la cabeza
+  leftArm: [-1.5 * size, -size],     // brazos a la altura del torso
+  rightArm: [1.5 * size, -size],
+  leftLeg: [-0.5 * size, 0],         // piernas justo debajo del torso
+  rightLeg: [0.5 * size, 0]
 };
   
 const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
