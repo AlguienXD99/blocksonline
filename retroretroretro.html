@@ -62,6 +62,7 @@ let players = {}, me = {
 };
 let targetX = me.x, targetY = me.y;
 const speed = 3;
+let currentMini = null;
 
 // Movimiento
 addEventListener("mousemove", e => {
@@ -194,8 +195,6 @@ const minigames = {
     }
   }
 };
-
-let currentMini = null;
 
 function startMinigame() {
   if (currentMini) return;
