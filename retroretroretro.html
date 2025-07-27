@@ -36,7 +36,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
 import { getDatabase, ref, onValue, set, update, get, child } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 
-const app = initializeApp({
+const firebaseConfig = {
   apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
   authDomain: "virtualblocks-b7a52.firebaseapp.com",
   databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
@@ -44,158 +44,191 @@ const app = initializeApp({
   storageBucket: "virtualblocks-b7a52.firebasestorage.app",
   messagingSenderId: "490618182453",
   appId: "1:490618182453:web:93385819c7ff08537d8a7c"
-});
-const db = getDatabase(app), auth = getAuth(app);
+};
 
-const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-canvas.width = innerWidth; canvas.height = innerHeight;
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
 
-let players = {}, me = { id:null, x:0, y:0, color:"#888", nickname:"", avatarConfig:{}, equippedItems:{}, blocksgold:0 };
-let targetX = 0, targetY = 0;
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
+let players = {}, me = {
+  id: null, x: 100, y: 100,
+  color: "#888", nickname: "Anon",
+  avatarConfig: {}, equippedItems: {}, blocksgold: 0
+};
+let targetX = me.x, targetY = me.y;
 const speed = 3;
 
-// Movimiento del cursor
-addEventListener("mousemove", e => { targetX = e.clientX; targetY = e.clientY; });
+// Movimiento
+addEventListener("mousemove", e => {
+  targetX = e.clientX;
+  targetY = e.clientY;
+});
 addEventListener("keydown", e => {
-  if (e.key === "e" && me.id) toggleEquip(); 
+  if (e.key === "e" && me.id) toggleEquip();
 });
 
-// Escucha estado de auth
+// Firebase Auth y carga de datos
 onAuthStateChanged(auth, user => {
   if (!user) return;
+
   me.id = user.uid;
-  const userRef = ref(db, `users/${me.id}`);
+  const userRefPath = ref(db, `users/${me.id}`);
   const selfRef = ref(db, `players/${me.id}`);
-  set(selfRef, { x:100, y:100 });
-  userRef.update({ isConnectedToGame1: true });
-  
- // Usa esto (forma correcta modular):
-get(child(ref(db), `users/${me.id}/nickname`)).then(s => {
-  me.nickname = s.exists() ? s.val() : "Anon";
-});
-  onValue(userRef, s => {
-    const d = s.val(); if (!d) return;
+
+  set(selfRef, { x: me.x, y: me.y });
+
+  update(userRefPath, { isConnectedToGame1: true });
+
+  get(child(ref(db), `users/${me.id}/nickname`)).then(s => {
+    if (s.exists()) me.nickname = s.val();
+  });
+
+  onValue(userRefPath, snap => {
+    const d = snap.val(); if (!d) return;
     me.avatarConfig = d.avatarConfig || {};
     me.equippedItems = d.equippedItems || {};
     me.blocksgold = d.blocksgold || 0;
     document.getElementById("bgCount").innerText = me.blocksgold;
   });
-  
-  onValue(ref(db,'players'), snap => {
-    players = snap.val()||{};
+
+  onValue(ref(db, 'players'), snap => {
+    players = snap.val() || {};
     updateLeaderboard();
   });
-  
+
   setInterval(() => {
-    const p = { x:me.x, y:me.y };
-    set(selfRef, p);
-    update(userRef, { blocksgold: me.blocksgold });
+    set(selfRef, { x: me.x, y: me.y });
+    update(userRefPath, { blocksgold: me.blocksgold });
   }, 500);
 });
 
-// Renderizado avatars y juego
-function draw() {
+// Render
+function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   for (let uid in players) {
     const p = players[uid];
-    ctx.fillStyle = uid===me.id ? "#ff0" : "#0f0";
-    ctx.fillRect(p.x-10, p.y-10, 20, 20);
-    ctx.fillStyle="#fff"; ctx.fillText(p.nickname||uid,p.x-15,p.y-15);
-    // dibuja avatar Config colores
-    const cfg = (uid===me.id ? me.avatarConfig : {} );
-    drawAvatarOverlay(p.x,p.y,cfg, uid===me.id?me.equippedItems:{});
-  }
-  requestAnimationFrame(draw);
-}
-draw();
+    ctx.fillStyle = uid === me.id ? "#ff0" : "#0f0";
+    ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(p.nickname || uid, p.x - 15, p.y - 15);
 
-function drawAvatarOverlay(x,y, config, equipped) {
-  const size=40, step=20;
-  const offs = { head:[0,-step], torso:[0,0], leftArm:[-step,0], rightArm:[step,0], leftLeg:[-step,step], rightLeg:[step,step] };
-  for (let part in offs) {
-    ctx.fillStyle = config[part]||"#555";
-    ctx.fillRect(x+offs[part][0]-size/2, y+offs[part][1]-size/2, size, size);
+    const cfg = uid === me.id ? me.avatarConfig : {};
+    const gear = uid === me.id ? me.equippedItems : {};
+    drawAvatarOverlay(p.x, p.y, cfg, gear);
   }
-  // Gears equipados
-  let dy=30;
+
+  if (currentMini && currentMini.drawZone) {
+    currentMini.drawZone();
+  }
+
+  updatePosition();
+  requestAnimationFrame(render);
+}
+render();
+
+function updatePosition() {
+  const dx = targetX - me.x;
+  const dy = targetY - me.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 1) {
+    me.x += dx / dist * speed;
+    me.y += dy / dist * speed;
+  }
+}
+
+function drawAvatarOverlay(x, y, config, equipped) {
+  const size = 40, step = 20;
+  const offs = {
+    head: [0, -step], torso: [0, 0],
+    leftArm: [-step, 0], rightArm: [step, 0],
+    leftLeg: [-step, step], rightLeg: [step, step]
+  };
+  for (let part in offs) {
+    ctx.fillStyle = config[part] || "#555";
+    ctx.fillRect(x + offs[part][0] - size / 2, y + offs[part][1] - size / 2, size, size);
+  }
+
+  let dy = 30;
   for (let key in equipped) {
     const it = equipped[key];
     if (!it || !it.imageUrl) continue;
     const img = new Image();
     img.src = it.imageUrl;
-    img.onload = () => ctx.drawImage(img, x-15, y+dy,30,30);
+    img.onload = () => ctx.drawImage(img, x - 15, y + dy, 30, 30);
     dy += 35;
   }
 }
 
-function updateLeaderboard(){
+function updateLeaderboard() {
   let html = "<b>Jugadores</b><br>";
   for (let uid in players) {
-    html += (players[uid].nickname||uid)+"<br>";
+    html += (players[uid].nickname || uid) + "<br>";
   }
   document.getElementById("leaderboard").innerHTML = html;
 }
 
 // MINIJUEGOS
-
 const minigames = {
   colorTile: {
-    title:"Pisa el color correcto",
-    start(){
-      document.getElementById("minigame").style.display="block";
+    title: "Pisa el color correcto",
+    start() {
+      document.getElementById("minigame").style.display = "block";
       document.getElementById("mgTitle").innerText = this.title;
       document.getElementById("mgContent").innerHTML = `Presiona <b>ESPACIO</b> solo si estás sobre el <span style="color: red;">cuadro rojo</span>.`;
       document.getElementById("mgAction").onclick = () => {
         const p = players[me.id];
-        const inside = p && p.x>300 && p.x<400 && p.y>200 && p.y<300; // cuadrado rojo
-        if (inside) reward(10);
-        else reward(0);
+        const inside = p && p.x > 300 && p.x < 400 && p.y > 200 && p.y < 300;
+        reward(inside ? 10 : 0);
         endMini();
       };
     },
-    drawZone(){
-      ctx.strokeStyle="red";
-      ctx.strokeRect(300,200,100,100);
+    drawZone() {
+      ctx.strokeStyle = "red";
+      ctx.strokeRect(300, 200, 100, 100);
     }
   }
 };
 
 let currentMini = null;
 
-function startMinigame(){
+function startMinigame() {
   if (currentMini) return;
   currentMini = minigames.colorTile;
   currentMini.start();
 }
 
-function reward(amount){
-  if (amount>0) {
+function reward(amount) {
+  if (amount > 0) {
     me.blocksgold += amount;
     showToast(`¡Ganaste ${amount} BLOCKSGOLD!`);
-  } else showToast("Fallaste, sigue intentando.");
+  } else {
+    showToast("Fallaste, sigue intentando.");
+  }
 }
 
-function endMini(){
+function endMini() {
   currentMini = null;
-  document.getElementById("minigame").style.display="none";
+  document.getElementById("minigame").style.display = "none";
 }
 
-function showToast(msg){
+function showToast(msg) {
   const div = document.createElement("div");
-  div.innerText=msg;
-  Object.assign(div.style,{ position:"fixed",bottom:"50px",left:"50%",transform:"translateX(-50%)",
-    background:"#333",color:"#fff",padding:"10px",borderRadius:"5px",zIndex:"9999"});
+  div.innerText = msg;
+  Object.assign(div.style, {
+    position: "fixed", bottom: "50px", left: "50%",
+    transform: "translateX(-50%)", background: "#333",
+    color: "#fff", padding: "10px", borderRadius: "5px",
+    zIndex: "9999"
+  });
   document.body.appendChild(div);
-  setTimeout(()=>div.remove(),2000);
+  setTimeout(() => div.remove(), 2000);
 }
-
-// dibujo adicional del minijuego
-function drawWithMinizones(){
-  draw();
-  if (currentMini && currentMini.drawZone) currentMini.drawZone();
-}
-draw = drawWithMinizones;
 </script>
 </body>
 </html>
