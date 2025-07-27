@@ -135,10 +135,6 @@ function render() {
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
     ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - 50);
-    // Dibujar brazo izquierdo
-    ctx.fillRect(x + offs.leftArm[0], y + offs.leftArm[1], size * 0.4, size * 1.5);
-    // Dibujar pierna derecha
-    ctx.fillRect(x + offs.rightLeg[0], y + offs.rightLeg[1], size * 0.4, size * 1.5);
     const cfg = uid === me.id ? me.avatarConfig : p.avatarConfig || {};
     const gear = uid === me.id ? me.equippedItems : p.equippedItems || {};
     drawAvatarOverlay(p.x, p.y, cfg, gear);
