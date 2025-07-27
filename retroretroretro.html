@@ -168,12 +168,19 @@ function drawAvatarOverlay(x, y, config, equipped) {
     leftLeg: [-step, step], rightLeg: [step, step]
   };
   
-const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
+const offs = {
+  head: [0, -2 * size],
+  torso: [0, 0],
+  leftArm: [-1.5 * size, -0.5 * size],
+  rightArm: [1.5 * size, -0.5 * size],
+  leftLeg: [-0.5 * size, 1.5 * size],
+  rightLeg: [0.5 * size, 1.5 * size]
+};
 
 for (let part of renderOrder) {
   const [dx, dy] = offs[part];
   ctx.fillStyle = config[part] || "#555";
-  ctx.fillRect(x + dx - size / 2, y + dy - size / 2, size, size);
+  ctx.fillRect(x + dx, y + dy, size, size);
 }
 
   let dy = 30;
