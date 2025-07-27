@@ -135,7 +135,10 @@ function render() {
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
     ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - 50);
-
+    // Dibujar brazo izquierdo
+    ctx.fillRect(x + offs.leftArm[0], y + offs.leftArm[1], size * 0.4, size * 1.5);
+    // Dibujar pierna derecha
+    ctx.fillRect(x + offs.rightLeg[0], y + offs.rightLeg[1], size * 0.4, size * 1.5);
     const cfg = uid === me.id ? me.avatarConfig : p.avatarConfig || {};
     const gear = uid === me.id ? me.equippedItems : p.equippedItems || {};
     drawAvatarOverlay(p.x, p.y, cfg, gear);
@@ -163,12 +166,12 @@ function updatePosition() {
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40, step = 20;  
 const offs = {
-  head: [0, -2 * size],              // cabeza encima del torso
-  torso: [0, -size],                 // torso justo debajo de la cabeza
-  leftArm: [-1.5 * size, -size],     // brazos a la altura del torso
-  rightArm: [1.5 * size, -size],
-  leftLeg: [-0.5 * size, 0],         // piernas justo debajo del torso
-  rightLeg: [0.5 * size, 0]
+  head: [0, -2 * size],
+  torso: [0, 0],
+  leftArm: [-1 * size, -0.5 * size],    // Más cerca al torso
+  rightArm: [1 * size, -0.5 * size],    // Más cerca al torso
+  leftLeg: [-0.5 * size, 1.5 * size],
+  rightLeg: [0.5 * size, 1.5 * size]
 };
   
 const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
