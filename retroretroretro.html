@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>BLOXPAST2D Event</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #202225;
+      color: white;
+      margin: 0;
+      overflow: hidden;
+    }
+    #gameCanvas {
+      background: #2f3136;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    input, button {
+      margin: 4px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="ui">
+    <input id="playerName" placeholder="Tu nombre">
+    <input type="color" id="playerColor">
+    <button onclick="joinGame()">Entrar</button>
+    <button onclick="equipGear()">Equipar Gear</button>
+  </div>
+  <audio id="bgMusic" src="musica.mp3" loop autoplay></audio>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+    // Configura Firebase
+    const firebaseConfig = {
+  apiKey: "AIzaSyBuWcUaYo9eah5mehCQ0h8bBnkE_251NKY",
+  authDomain: "virtualblocks-b7a52.firebaseapp.com",
+  databaseURL: "https://virtualblocks-b7a52-default-rtdb.firebaseio.com",
+  projectId: "virtualblocks-b7a52",
+  storageBucket: "virtualblocks-b7a52.firebasestorage.app",
+  messagingSenderId: "490618182453",
+  appId: "1:490618182453:web:93385819c7ff08537d8a7c"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let players = {};
+    let myId = null;
+
+    function joinGame() {
+      const name = document.getElementById('playerName').value;
+      const color = document.getElementById('playerColor').value;
+      myId = 'player_' + Math.random().toString(36).substr(2, 9);
+
+      const playerRef = db.ref('players/' + myId);
+      playerRef.set({ name, color, x: 100, y: 100, gear: null });
+      playerRef.onDisconnect().remove();
+
+      window.addEventListener('keydown', (e) => move(e, playerRef));
+    }
+
+    function move(e, ref) {
+      if (!ref) return;
+      ref.once('value').then(snapshot => {
+        const p = snapshot.val();
+        let dx = 0, dy = 0;
+        if (e.key === 'ArrowUp') dy = -10;
+        if (e.key === 'ArrowDown') dy = 10;
+        if (e.key === 'ArrowLeft') dx = -10;
+        if (e.key === 'ArrowRight') dx = 10;
+        ref.update({ x: (p.x || 0) + dx, y: (p.y || 0) + dy });
+      });
+    }
+
+    function equipGear() {
+      const gear = prompt("Escribe el nombre del gear:");
+      db.ref('players/' + myId).update({ gear });
+    }
+
+    db.ref('players').on('value', snapshot => {
+      players = snapshot.val() || {};
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let id in players) {
+        const p = players[id];
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 40, 40);
+        ctx.fillStyle = "white";
+        ctx.fillText(p.name, p.x, p.y - 10);
+        if (p.gear) ctx.fillText("⚙ " + p.gear, p.x, p.y + 50);
+      }
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+</body>
+</html>
