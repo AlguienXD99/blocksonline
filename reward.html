@@ -33,13 +33,13 @@
         async function redeemGiftCard() {
             const code = document.getElementById("giftCode").value.trim();
             if (!code) {
-                alert("Ingresa un código válido.");
+                alert("Enter a valid code!");
                 return;
             }
 
             const user = auth.currentUser;
             if (!user) {
-                alert("Debes iniciar sesión para canjear una tarjeta de regalo.");
+                alert("You must login to redeem a code.");
                 return;
             }
 
@@ -51,7 +51,7 @@
                 // Obtener el código de Firestore
                 const codeSnap = await getDoc(codeRef);
                 if (!codeSnap.exists()) {
-                    alert("Código inválido o ya canjeado.");
+                    alert("Invalid code or already redeemed.");
                     return;
                 }
 
@@ -71,16 +71,16 @@
                 document.getElementById("giftCode").value = ""; // Limpiar el campo
             } catch (error) {
                 console.error("Error al canjear código:", error);
-                alert("Hubo un problema al canjear el código.");
+                alert("A problem has ocurred.");
             }
         }
 
         // Verificar si el usuario está autenticado
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById("authStatus").innerText = `Bienvenido, ${user.email}`;
+                document.getElementById("authStatus").innerText = `Welcome, ${user.email}`;
             } else {
-                document.getElementById("authStatus").innerText = "No has iniciado sesión.";
+                document.getElementById("authStatus").innerText = "You're not logged in.";
             }
         });
 
