@@ -167,10 +167,14 @@ function drawAvatarOverlay(x, y, config, equipped) {
     leftArm: [-step, 0], rightArm: [step, 0],
     leftLeg: [-step, step], rightLeg: [step, step]
   };
-  for (let part in offs) {
-    ctx.fillStyle = config[part] || "#555";
-    ctx.fillRect(x + offs[part][0] - size / 2, y + offs[part][1] - size / 2, size, size);
-  }
+  
+const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
+
+for (let part of renderOrder) {
+  const [dx, dy] = offs[part];
+  ctx.fillStyle = config[part] || "#555";
+  ctx.fillRect(x + dx - size / 2, y + dy - size / 2, size, size);
+}
 
   let dy = 30;
   for (let key in equipped) {
