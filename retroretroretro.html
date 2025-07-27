@@ -63,6 +63,7 @@ let players = {}, me = {
 let targetX = me.x, targetY = me.y;
 const speed = 3;
 let currentMini = null;
+let playersCache = {};
 
 // Movimiento
 addEventListener("mousemove", e => {
@@ -118,6 +119,12 @@ onValue(ref(db, 'players'), snap => {
 
   updateLeaderboard();
 }
+onValue(playersRef, (snapshot) => {
+  const playersData = snapshot.val();
+  if (playersData) {
+    playersCache = playersData;
+  }
+});
 
   setInterval(() => {
     set(selfRef, { x: me.x, y: me.y });
@@ -125,30 +132,32 @@ onValue(ref(db, 'players'), snap => {
   }, 500);
 });
 
-// Render
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (let uid in players) {
-    const p = players[uid];
-    ctx.fillStyle = uid === me.id ? "#ff0" : "#0f0";
-    ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x - 15, p.y - 15);
+  for (const key in playersCache) {
+    const otherPlayer = playersCache[key];
+    if (!otherPlayer || !otherPlayer.x || !otherPlayer.y) continue;
 
-    const cfg = uid === me.id ? me.avatarConfig : {};
-    const gear = uid === me.id ? me.equippedItems : {};
-    drawAvatarOverlay(p.x, p.y, cfg, gear);
+    const x = otherPlayer.x * tileSize;
+    const y = otherPlayer.y * tileSize;
+
+    if (key === userId) {
+      ctx.fillStyle = "blue";
+    } else {
+      ctx.fillStyle = "red";
+    }
+
+    ctx.fillRect(x, y, tileSize, tileSize);
+    // Nickname
+    if (nicknames[key]) {
+      ctx.fillStyle = "white";
+      ctx.fillText(nicknames[key], x, y - 5);
+    }
   }
 
-  if (currentMini && currentMini.drawZone) {
-    currentMini.drawZone();
-  }
-
-  updatePosition();
   requestAnimationFrame(render);
 }
-render();
 
 function updatePosition() {
   const dx = targetX - me.x;
