@@ -134,7 +134,7 @@ function render() {
     ctx.fillStyle = "#fff";
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - 50);
+    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - size * 2.6);
     const cfg = uid === me.id ? me.avatarConfig : p.avatarConfig || {};
     const gear = uid === me.id ? me.equippedItems : p.equippedItems || {};
     drawAvatarOverlay(p.x, p.y, cfg, gear);
@@ -161,12 +161,13 @@ function updatePosition() {
 
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40;
-
+  const headSize = 26; // Cabeza más pequeña
+  
   const offs = {
-    head: [0, -1.5 * size],
+    head: [-(headSize - size) / 2, -1.1 * size],          // Más cerca al torso
     torso: [0, 0],
-    leftArm: [-0.6 * size, 0],
-    rightArm: [0.6 * size, 0],
+    leftArm: [-0.8 * size, -0.2 * size],
+    rightArm: [0.8 * size, -0.2 * size],
     leftLeg: [-0.3 * size, 1.3 * size],
     rightLeg: [0.3 * size, 1.3 * size]
   };
@@ -184,9 +185,10 @@ function drawAvatarOverlay(x, y, config, equipped) {
 
   for (let part of renderOrder) {
     const [dx, dy] = offs[part];
-    const [w, h] = sizes[part];
     ctx.fillStyle = config[part] || "#555";
-    ctx.fillRect(x + dx - w / 2, y + dy - h / 2, w, h);
+    const w = part === "head" ? headSize : size * (["leftArm", "rightArm"].includes(part) ? 0.4 : 1);
+    const h = part === "head" ? headSize : size * (["leftArm", "rightArm"].includes(part) ? 1 : 1.2);
+    ctx.fillRect(x + dx, y + dy, w, h);
   }
 
   // 👇 Este bloque debe ir dentro de la función, aquí está bien
@@ -202,7 +204,7 @@ function drawAvatarOverlay(x, y, config, equipped) {
 }
 
 function updateLeaderboard() {
-  let html = "<b>Jugadores</b><br>";
+  let html = "<b>Players</b><br>";
   for (let uid in players) {
     html += (players[uid].nickname || uid) + "<br>";
   }
