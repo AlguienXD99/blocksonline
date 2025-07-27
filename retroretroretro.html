@@ -132,10 +132,12 @@ function render() {
     ctx.fillStyle = p.avatarConfig?.torso || (uid === me.id ? "#ff0" : "#0f0");
     ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
     ctx.fillStyle = "#fff";
-    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x - 15, p.y - 15);
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - 50);
 
-    const cfg = uid === me.id ? me.avatarConfig : {};
-    const gear = uid === me.id ? me.equippedItems : {};
+    const cfg = uid === me.id ? me.avatarConfig : p.avatarConfig || {};
+    const gear = uid === me.id ? me.equippedItems : p.equippedItems || {};
     drawAvatarOverlay(p.x, p.y, cfg, gear);
   }
 
