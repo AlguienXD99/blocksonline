@@ -131,7 +131,6 @@ function render() {
   for (let uid in players) {
     const p = players[uid];
     ctx.fillStyle = p.avatarConfig?.torso || (uid === me.id ? "#ff0" : "#0f0");
-    ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
     ctx.fillStyle = "#fff";
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
@@ -162,16 +161,7 @@ function updatePosition() {
 
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40;
-  const headSize = 28; // Tamaño más cercano al torso
-
-  const offs = {
-    head: [-(headSize - size) / 2, -0.95 * size], // Más unido al torso
-    torso: [0, 0],
-    leftArm: [-0.75 * size, 0],
-    rightArm: [0.75 * size, 0],
-    leftLeg: [-0.25 * size, 1.2 * size],
-    rightLeg: [0.25 * size, 1.2 * size]
-  };
+  const headSize = 28;
 
   const sizes = {
     head: [headSize, headSize],
@@ -182,13 +172,22 @@ function drawAvatarOverlay(x, y, config, equipped) {
     rightLeg: [size * 0.32, size * 1.15]
   };
 
+  const offs = {
+    head: [0, -1.1 * size],
+    torso: [0, 0],
+    leftArm: [-0.6 * size, 0],
+    rightArm: [0.6 * size, 0],
+    leftLeg: [-0.25 * size, 1.2 * size],
+    rightLeg: [0.25 * size, 1.2 * size]
+  };
+
   const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
 
   for (let part of renderOrder) {
     const [dx, dy] = offs[part];
     const [w, h] = sizes[part];
     ctx.fillStyle = config[part] || "#555";
-    ctx.fillRect(x + dx, y + dy, w, h);
+    ctx.fillRect(x + dx - w / 2, y + dy, w, h);
   }
 
   // Equipamiento
