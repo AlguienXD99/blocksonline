@@ -94,7 +94,9 @@ const selfRef = ref(db, `players/${me.id}`);
     const d = snap.val(); if (!d) return;
     me.avatarConfig = d.avatarConfig || {};
     me.equippedItems = d.equippedItems || {};
-    me.blocksgold = d.blocksgold || 0;
+    if (typeof d.blocksgold === "number") {
+     me.blocksgold = d.blocksgold;
+    }
     document.getElementById("bgCount").innerText = me.blocksgold;
   });
 
