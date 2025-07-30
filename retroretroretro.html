@@ -90,15 +90,24 @@ const selfRef = ref(db, `players/${me.id}`);
     if (s.exists()) me.nickname = s.val();
   });
 
-  onValue(userRefPath, snap => {
-    const d = snap.val(); if (!d) return;
-    me.avatarConfig = d.avatarConfig || {};
-    me.equippedItems = d.equippedItems || {};
-    if (typeof d.blocksgold === "number") {
-     me.blocksgold = d.blocksgold;
-    }
+onValue(userRefPath, snap => {
+  const d = snap.val(); if (!d) return;
+  me.avatarConfig = d.avatarConfig || {};
+  me.equippedItems = d.equippedItems || {};
+  if (typeof d.blocksgold === "number") {
+    me.blocksgold = d.blocksgold;
     document.getElementById("bgCount").innerText = me.blocksgold;
-  });
+
+    // Solo iniciamos el intervalo cuando ya se cargó el blocksgold
+    if (!window._bgIntervalStarted) {
+      window._bgIntervalStarted = true;
+      setInterval(() => {
+        update(selfRef, { x: me.x, y: me.y });
+        update(userRefPath, { blocksgold: me.blocksgold });
+      }, 500);
+    }
+  }
+});
 
 onValue(ref(db, 'players'), async snap => {
   const data = snap.val();
