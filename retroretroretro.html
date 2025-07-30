@@ -59,7 +59,7 @@ const playersRef = ref(db, "players");
 let players = {}, me = {
   id: null, x: 100, y: 100,
   color: "#888", nickname: "Anon",
-  avatarConfig: {}, equippedItems: {}, blocksgold: 0
+  avatarConfig: {}, equippedItems: {}
 };
 let targetX = me.x, targetY = me.y;
 const speed = 3;
@@ -90,22 +90,15 @@ const selfRef = ref(db, `players/${me.id}`);
     if (s.exists()) me.nickname = s.val();
   });
 
-onValue(userRefPath, snap => {
-  const d = snap.val(); if (!d) return;
-  me.avatarConfig = d.avatarConfig || {};
-  me.equippedItems = d.equippedItems || {};
-  if (typeof d.blocksgold === "number") {
-    me.blocksgold = d.blocksgold;
-    document.getElementById("bgCount").innerText = me.blocksgold;
-
-    // Solo iniciamos el intervalo cuando ya se cargó el blocksgold
-    if (!window._bgIntervalStarted) {
-      window._bgIntervalStarted = true;
-      setInterval(() => {
-        update(selfRef, { x: me.x, y: me.y });
-        update(userRefPath, { blocksgold: me.blocksgold });
-      }, 500);
-    }
+get(userRefPath).then(snap => {
+  if (!snap.exists()) {
+    // Usuario nuevo: inicializa blocksgold en 0
+    set(userRefPath, {
+      blocksgold: 0,
+      avatarConfig: {},
+      equippedItems: {},
+      nickname: user.displayName || "Anon"
+    });
   }
 });
 
