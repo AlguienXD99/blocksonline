@@ -99,6 +99,13 @@ get(userRefPath).then(snap => {
       equippedItems: {},
       nickname: user.displayName || "Anon"
     });
+  } else {
+    const data = snap.val();
+    me.blocksgold = data.blocksgold || 0;
+    me.nickname = data.nickname || "Anon";
+    me.avatarConfig = data.avatarConfig || {};
+    me.equippedItems = data.equippedItems || {};
+    document.getElementById("bgCount").innerText = me.blocksgold; // Actualiza UI
   }
 });
 
