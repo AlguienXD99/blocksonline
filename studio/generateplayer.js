@@ -5,7 +5,7 @@ canvas.height = innerHeight;
 let me = {
   x: 100,
   y: 100,
-  nickname: "Anon",
+  nickname: "Player",
   avatarConfig: {
     head: "#ffcc99",
     torso: "#0084ff",
