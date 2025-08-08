@@ -111,28 +111,32 @@ get(userRefPath).then(snap => {
 
 onValue(ref(db, 'players'), async snap => {
   const data = snap.val();
-  const nicknamePromises = Object.keys(data || {}).map(async (uid) => {
-    const userSnap = await get(child(ref(db), `users/${uid}`));
-    const userData = userSnap.exists() ? userSnap.val() : {};
+  const uids = Object.keys(data || {}).filter(uid => uid && uid !== "undefined");
+  const nicknamePromises = uids.map(async (uid) => {
+    try {
+      const userSnap = await get(child(ref(db), `users/${uid}`));
+      const userData = userSnap.exists() ? userSnap.val() : {};
 
-    players[uid] = {
-      ...players[uid],
-      ...data[uid],
-      nickname: userData.nickname || uid,
-      avatarConfig: userData.avatarConfig || {},
-      equippedItems: userData.equippedItems || {}
-    };
+      players[uid] = {
+        ...players[uid],
+        ...data[uid],
+        nickname: userData.nickname || uid,
+        avatarConfig: userData.avatarConfig || {},
+        equippedItems: userData.equippedItems || {}
+      };
+    } catch(e) {
+      console.warn("Error fetching user data for uid", uid, e);
+    }
   });
 
   await Promise.all(nicknamePromises);
   updateLeaderboard();
 });
 
-  setInterval(() => {
-    update(selfRef, { x: me.x, y: me.y });
-    update(userRefPath, { blocksgold: me.blocksgold });
-  }, 500);
-});
+setInterval(() => {
+  update(selfRef, { x: me.x, y: me.y });
+  update(userRefPath, { blocksgold: (typeof me.blocksgold === 'number' ? me.blocksgold : 0) });
+}, 500);
 
 // Render
 function render() {
