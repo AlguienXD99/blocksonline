@@ -144,8 +144,10 @@ onValue(ref(db, 'players'), async snap => {
 });
 
 setInterval(() => {
-  update(selfRef, { x: me.x, y: me.y });
-  update(userRefPath, { blocksgold: (typeof me.blocksgold === 'number' ? me.blocksgold : 0) });
+  if (selfRef && userRefPath) {
+    update(selfRef, { x: me.x, y: me.y }).catch(console.warn);
+    update(userRefPath, { blocksgold: (typeof me.blocksgold === 'number' ? me.blocksgold : 0) }).catch(console.warn);
+  }
 }, 500);
 
 // Render
