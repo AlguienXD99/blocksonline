@@ -139,6 +139,7 @@ onValue(ref(db, 'players'), async snap => {
     console.error("Error en onValue players:", e);
   }
 });
+});
 
 setInterval(() => {
   update(selfRef, { x: me.x, y: me.y });
