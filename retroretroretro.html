@@ -134,13 +134,10 @@ onValue(ref(db, 'players'), async snap => {
 
     await Promise.all(nicknamePromises);
     updateLeaderboard();
+
   } catch(e) {
     console.error("Error en onValue players:", e);
   }
-});
-
-  await Promise.all(nicknamePromises);
-  updateLeaderboard();
 });
 
 setInterval(() => {
