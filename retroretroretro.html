@@ -74,14 +74,16 @@ addEventListener("keydown", e => {
   if (e.key === "e" && me.id) toggleEquip();
 });
 
-  const userRefPath = ref(db, `users/${me.id}`);
-  const selfRef = ref(db, `players/${me.id}`); 
+let userRefPath = null;
+let selfRef = null;
 // Firebase Auth y carga de datos
 onAuthStateChanged(auth, user => {
   if (!user) return;
 
   me.id = user.uid;
-
+  userRefPath = ref(db, `users/${me.id}`);
+  selfRef = ref(db, `players/${me.id}`);
+  
   update(selfRef, { x: me.x, y: me.y });
 
   update(userRefPath, { isConnectedToGame1: true });
