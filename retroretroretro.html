@@ -74,6 +74,8 @@ addEventListener("keydown", e => {
   if (e.key === "e" && me.id) toggleEquip();
 });
 
+let selfRef = null;
+let userRefPath = null;  
 // Firebase Auth y carga de datos
 onAuthStateChanged(auth, user => {
   if (!user) return;
