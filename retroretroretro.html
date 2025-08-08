@@ -110,24 +110,34 @@ get(userRefPath).then(snap => {
 });
 
 onValue(ref(db, 'players'), async snap => {
-  const data = snap.val();
-  const uids = Object.keys(data || {}).filter(uid => uid && uid !== "undefined");
-  const nicknamePromises = uids.map(async (uid) => {
-    try {
-      const userSnap = await get(child(ref(db), `users/${uid}`));
-      const userData = userSnap.exists() ? userSnap.val() : {};
+  try {
+    const data = snap.val();
+    const uids = Object.keys(data || {}).filter(uid => uid && typeof uid === 'string' && uid !== "undefined");
+    const nicknamePromises = uids.map(async (uid) => {
+      if (!uid) return;
+      try {
+        const userSnap = await get(child(ref(db), `users/${uid}`));
+        const userData = userSnap.exists() ? userSnap.val() : {};
 
-      players[uid] = {
-        ...players[uid],
-        ...data[uid],
-        nickname: userData.nickname || uid,
-        avatarConfig: userData.avatarConfig || {},
-        equippedItems: userData.equippedItems || {}
-      };
-    } catch(e) {
-      console.warn("Error fetching user data for uid", uid, e);
-    }
-  });
+        players[uid] = players[uid] || {};
+        players[uid] = {
+          ...players[uid],
+          ...data[uid],
+          nickname: userData.nickname || uid,
+          avatarConfig: userData.avatarConfig || {},
+          equippedItems: userData.equippedItems || {}
+        };
+      } catch(e) {
+        console.warn("Error fetching user data for uid", uid, e);
+      }
+    });
+
+    await Promise.all(nicknamePromises);
+    updateLeaderboard();
+  } catch(e) {
+    console.error("Error en onValue players:", e);
+  }
+});
 
   await Promise.all(nicknamePromises);
   updateLeaderboard();
