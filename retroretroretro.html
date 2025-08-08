@@ -174,6 +174,18 @@ function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40;
   const headSize = 28;
 
+  // Define posiciones base para cada "position" que uses en los ítems
+  const itemPositions = {
+    head: [0, -1.1 * size - 30],       // un poco arriba de la cabeza
+    torso: [0, 0],                    // sobre el torso
+    leftArm: [-0.6 * size - 20, 0],  // a la izquierda del brazo izquierdo
+    rightArm: [0.6 * size + 10, 0],  // a la derecha del brazo derecho
+    leftLeg: [-0.25 * size, 1.2 * size + 10],
+    rightLeg: [0.25 * size, 1.2 * size + 10],
+    back: [0, 10],                   // detrás del torso
+    // Puedes agregar más posiciones según tu necesidad
+  };
+
   const sizes = {
     head: [headSize, headSize],
     torso: [size * 0.9, size * 1.2],
@@ -192,8 +204,8 @@ function drawAvatarOverlay(x, y, config, equipped) {
     rightLeg: [0.25 * size, 1.2 * size]
   };
 
+  // Dibuja partes del avatar
   const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
-
   for (let part of renderOrder) {
     const [dx, dy] = offs[part];
     const [w, h] = sizes[part];
@@ -201,15 +213,22 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillRect(x + dx - w / 2, y + dy, w, h);
   }
 
-  // Equipamiento
-  let dy = 30;
+  // Dibuja ítems equipados según su posición
   for (let key in equipped) {
-    const it = equipped[key];
-    if (!it || !it.imageUrl) continue;
+    const item = equipped[key];
+    if (!item || !item.imageUrl) continue;
+
+    const pos = item.position || "torso"; // default a torso si no hay posición
+
+    const [offsetX, offsetY] = itemPositions[pos] || [0, 0];
+    const imgX = x + offsetX - 15; // ajusta el centro de la imagen
+    const imgY = y + offsetY;
+
     const img = new Image();
-    img.src = it.imageUrl;
-    img.onload = () => ctx.drawImage(img, x - 15, y + dy, 30, 30);
-    dy += 35;
+    img.src = item.imageUrl;
+    img.onload = () => {
+      ctx.drawImage(img, imgX, imgY, 30, 30);
+    };
   }
 }
 
