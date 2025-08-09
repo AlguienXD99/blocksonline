@@ -129,9 +129,9 @@ onAuthStateChanged(auth, async user => {
 onValue(ref(db, 'players'), async snap => {
   try {
     const data = snap.val();
-    const uids = Object.keys(data || {}).filter(uid => uid && typeof uid === 'string' && uid !== "undefined");
+    const uids = Object.keys(data || {}).filter(uid => uid && uid !== "undefined" && typeof uid === 'string');
     const nicknamePromises = uids.map(async (uid) => {
-      if (!uid) return;
+      if (!uid || uid === "undefined") return;
       try {
         const userSnap = await get(child(ref(db), `users/${uid}`));
         const userData = userSnap.exists() ? userSnap.val() : {};
