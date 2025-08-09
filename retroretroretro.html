@@ -77,29 +77,22 @@ addEventListener("keydown", e => {
 let userRefPath = null;
 let selfRef = null;
 // Firebase Auth y carga de datos
-onAuthStateChanged(auth, user => {
+onAuthStateChanged(auth, async user => {
   if (!user) return;
 
   me.id = user.uid;
   userRefPath = ref(db, `users/${me.id}`);
   selfRef = ref(db, `players/${me.id}`);
-  
-  update(selfRef, { x: me.x, y: me.y });
 
-  update(userRefPath, { isConnectedToGame1: true });
-
-  get(child(ref(db), `users/${me.id}/nickname`)).then(s => {
-    if (s.exists()) me.nickname = s.val();
-  });
-
-get(userRefPath).then(snap => {
+  // Guardar o inicializar datos del usuario
+  const snap = await get(userRefPath);
   if (!snap.exists()) {
-    // Usuario nuevo: inicializa blocksgold en 0
-    set(userRefPath, {
+    await set(userRefPath, {
       blocksgold: 0,
       avatarConfig: {},
       equippedItems: {},
-      nickname: user.displayName || "Anon"
+      nickname: user.displayName || "Anon",
+      isConnectedToGame1: true
     });
   } else {
     const data = snap.val();
@@ -107,8 +100,30 @@ get(userRefPath).then(snap => {
     me.nickname = data.nickname || "Anon";
     me.avatarConfig = data.avatarConfig || {};
     me.equippedItems = data.equippedItems || {};
-    document.getElementById("bgCount").innerText = me.blocksgold; // Actualiza UI
   }
+
+  document.getElementById("bgCount").innerText = me.blocksgold;
+
+  // Actualizar posición inicial
+  update(selfRef, { x: me.x, y: me.y });
+
+  // Suscribirse a jugadores
+  onValue(playersRef, async snap => {
+    const data = snap.val();
+    const uids = Object.keys(data || {}).filter(uid => uid && typeof uid === 'string');
+    const nicknamePromises = uids.map(async (uid) => {
+      const userSnap = await get(child(ref(db), `users/${uid}`));
+      const userData = userSnap.exists() ? userSnap.val() : {};
+      players[uid] = {
+        ...data[uid],
+        nickname: userData.nickname || uid,
+        avatarConfig: userData.avatarConfig || {},
+        equippedItems: userData.equippedItems || {}
+      };
+    });
+    await Promise.all(nicknamePromises);
+    updateLeaderboard();
+  });
 });
 
 onValue(ref(db, 'players'), async snap => {
@@ -140,7 +155,6 @@ onValue(ref(db, 'players'), async snap => {
   } catch(e) {
     console.error("Error en onValue players:", e);
   }
-});
 });
 
 setInterval(() => {
