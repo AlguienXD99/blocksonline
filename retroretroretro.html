@@ -149,6 +149,8 @@ onValue(ref(db, 'players2'), async snap => {
   await Promise.all(nicknamePromises);
 
   updateLeaderboard();
+
+  render();
 });
 
 setInterval(() => {
@@ -165,19 +167,22 @@ function render() {
 
   for (let uid in players) {
     const p = players[uid] || {};
-    const px = (typeof p.x === 'number') ? p.x : (uid === me.id ? me.x : 0);
-    const py = (typeof p.y === 'number') ? p.y : (uid === me.id ? me.y : 0);
-    const cfg = (uid === me.id) ? (me.avatarConfig || {}) : (p.avatarConfig || {});
-    const gear = (uid === me.id) ? (me.equippedItems || {}) : (p.equippedItems || {});
+    const px = (typeof p.x === 'number') ? p.x : 0;
+    const py = (typeof p.y === 'number') ? p.y : 0;
 
-    // Dibuja avatar CON SUS COLORES (drawAvatarOverlay usa defaults si faltan)
-    drawAvatarOverlay(px, py, cfg, gear);
+    // Para el jugador actual toma datos de players[me.id] siempre, no de me directamente
+    const cfg = p.avatarConfig || {};
+    const gear = p.equippedItems || {};
 
-    // Texto encima del avatar
     ctx.fillStyle = "#fff";
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
-    const name = p.nickname || (uid === me.id ? me.nickname : uid);
+
+    // Dibuja avatar
+    drawAvatarOverlay(px, py, cfg, gear);
+
+    // Nombre
+    const name = p.nickname || uid;
     ctx.fillText(name, px, py - size * 2.6);
   }
 
