@@ -55,7 +55,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
   
-const playersRef = ref(db, "players2");
+const playersRef = ref(db, "players");
 let players = {}, me = {
   id: null, x: 100, y: 100,
   color: "#888", nickname: "Anon",
@@ -81,13 +81,12 @@ onAuthStateChanged(auth, async user => {
   if (!user) return;
 
   me.id = user.uid;
-
   userRefPath = ref(db, `users/${me.id}`);
-  selfRef = ref(db, `players2/${me.id}`);
+  selfRef = ref(db, `players/${me.id}`);
 
-  // Carga datos del usuario desde /users/{me.id}
-  const userSnap = await get(userRefPath);
-  if (!userSnap.exists()) {
+  // Guardar o inicializar datos del usuario
+  const snap = await get(userRefPath);
+  if (!snap.exists()) {
     await set(userRefPath, {
       blocksgold: 0,
       avatarConfig: {},
@@ -95,62 +94,67 @@ onAuthStateChanged(auth, async user => {
       nickname: user.displayName || "Anon",
       isConnectedToGame1: true
     });
+  } else {
+    const data = snap.val();
+    me.blocksgold = data.blocksgold || 0;
+    me.nickname = data.nickname || "Anon";
+    me.avatarConfig = data.avatarConfig || {};
+    me.equippedItems = data.equippedItems || {};
   }
-  const data = userSnap.exists() ? userSnap.val() : {};
-
-  me.blocksgold = data.blocksgold || 0;
-  me.nickname = data.nickname || (user.displayName || "Anon");
-  me.avatarConfig = data.avatarConfig || {};
-  me.equippedItems = data.equippedItems || {};
 
   document.getElementById("bgCount").innerText = me.blocksgold;
 
-  await update(selfRef, {
-    x: me.x,
-    y: me.y,
-    nickname: me.nickname,
-    avatarConfig: me.avatarConfig,
-    equippedItems: me.equippedItems
-  });
+  // Actualizar posición inicial
+  update(selfRef, { x: me.x, y: me.y });
 
-  players[me.id] = {
-    x: me.x,
-    y: me.y,
-    nickname: me.nickname,
-    avatarConfig: me.avatarConfig,
-    equippedItems: me.equippedItems
-  };
-  updateLeaderboard();
-});
-
-onValue(ref(db, 'players2'), async snap => {
-  const data = snap.val() || {};
-  const uids = Object.keys(data).filter(uid => uid && uid !== "undefined" && typeof uid === 'string');
-
-  const nicknamePromises = uids.map(async uid => {
-    if (uid === me.id) return; // No sobreescribas tus datos
-
-    try {
-      const userSnap = await get(ref(db, `users/${uid}`));
+  // Suscribirse a jugadores
+  onValue(playersRef, async snap => {
+    const data = snap.val();
+    const uids = Object.keys(data || {}).filter(uid => uid && typeof uid === 'string');
+    const nicknamePromises = uids.map(async (uid) => {
+      const userSnap = await get(child(ref(db), `users/${uid}`));
       const userData = userSnap.exists() ? userSnap.val() : {};
-
       players[uid] = {
-        ...players[uid],
         ...data[uid],
         nickname: userData.nickname || uid,
         avatarConfig: userData.avatarConfig || {},
         equippedItems: userData.equippedItems || {}
       };
-    } catch(e) {
-      console.warn("Error fetching user data for uid", uid, e);
-    }
+    });
+    await Promise.all(nicknamePromises);
+    updateLeaderboard();
   });
+});
 
-  await Promise.all(nicknamePromises);
+onValue(ref(db, 'players'), async snap => {
+  try {
+    const data = snap.val();
+    const uids = Object.keys(data || {}).filter(uid => uid && uid !== "undefined" && typeof uid === 'string');
+    const nicknamePromises = uids.map(async (uid) => {
+      if (!uid || uid === "undefined") return;
+      try {
+        const userSnap = await get(child(ref(db), `users/${uid}`));
+        const userData = userSnap.exists() ? userSnap.val() : {};
 
-  updateLeaderboard();
+        players[uid] = players[uid] || {};
+        players[uid] = {
+          ...players[uid],
+          ...data[uid],
+          nickname: userData.nickname || uid,
+          avatarConfig: userData.avatarConfig || {},
+          equippedItems: userData.equippedItems || {}
+        };
+      } catch(e) {
+        console.warn("Error fetching user data for uid", uid, e);
+      }
+    });
 
-  render();
+    await Promise.all(nicknamePromises);
+    updateLeaderboard();
+
+  } catch(e) {
+    console.error("Error en onValue players:", e);
+  }
 });
 
 setInterval(() => {
@@ -162,31 +166,24 @@ setInterval(() => {
 
 // Render
 function render() {
-  const size = 40;
+  const size = 40; // <-- ¡Agrega esta línea!
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (let uid in players) {
-    const p = players[uid] || {};
-    const px = (typeof p.x === 'number') ? p.x : 0;
-    const py = (typeof p.y === 'number') ? p.y : 0;
-
-    // Para el jugador actual toma datos de players[me.id] siempre, no de me directamente
-    const cfg = p.avatarConfig || {};
-    const gear = p.equippedItems || {};
-
+    const p = players[uid];
+    ctx.fillStyle = p.avatarConfig?.torso || (uid === me.id ? "#ff0" : "#0f0");
     ctx.fillStyle = "#fff";
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
-
-    // Dibuja avatar
-    drawAvatarOverlay(px, py, cfg, gear);
-
-    // Nombre
-    const name = p.nickname || uid;
-    ctx.fillText(name, px, py - size * 2.6);
+    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - size * 2.6);
+    const cfg = uid === me.id ? me.avatarConfig : p.avatarConfig || {};
+    const gear = uid === me.id ? me.equippedItems : p.equippedItems || {};
+    drawAvatarOverlay(p.x, p.y, cfg, gear);
   }
 
-  if (currentMini && currentMini.drawZone) currentMini.drawZone();
+  if (currentMini && currentMini.drawZone) {
+    currentMini.drawZone();
+  }
 
   updatePosition();
   requestAnimationFrame(render);
