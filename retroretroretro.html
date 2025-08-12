@@ -81,12 +81,13 @@ onAuthStateChanged(auth, async user => {
   if (!user) return;
 
   me.id = user.uid;
+
   userRefPath = ref(db, `users/${me.id}`);
   selfRef = ref(db, `players2/${me.id}`);
 
-  // Guardar o inicializar datos del usuario
-  const snap = await get(userRefPath);
-  if (!snap.exists()) {
+  // Carga datos del usuario desde /users/{me.id}
+  const userSnap = await get(userRefPath);
+  if (!userSnap.exists()) {
     await set(userRefPath, {
       blocksgold: 0,
       avatarConfig: {},
@@ -94,64 +95,60 @@ onAuthStateChanged(auth, async user => {
       nickname: user.displayName || "Anon",
       isConnectedToGame1: true
     });
-  } else {
-    const data = snap.val();
-    me.blocksgold = data.blocksgold || 0;
-    me.nickname = data.nickname || (user.displayName || "Anon");
-    me.avatarConfig = data.avatarConfig || {};
-    me.equippedItems = data.equippedItems || {};
   }
+  const data = userSnap.exists() ? userSnap.val() : {};
+
+  me.blocksgold = data.blocksgold || 0;
+  me.nickname = data.nickname || (user.displayName || "Anon");
+  me.avatarConfig = data.avatarConfig || {};
+  me.equippedItems = data.equippedItems || {};
 
   document.getElementById("bgCount").innerText = me.blocksgold;
 
-  // Actualizar posición inicial
   await update(selfRef, {
     x: me.x,
     y: me.y,
     nickname: me.nickname,
-    avatarConfig: me.avatarConfig || {},
-    equippedItems: me.equippedItems || {}
+    avatarConfig: me.avatarConfig,
+    equippedItems: me.equippedItems
   });
-// después del update(selfRef, {...})
-players[me.id] = {
-  x: me.x,
-  y: me.y,
-  nickname: me.nickname,
-  avatarConfig: me.avatarConfig || {},
-  equippedItems: me.equippedItems || {}
-};
-updateLeaderboard();
+
+  players[me.id] = {
+    x: me.x,
+    y: me.y,
+    nickname: me.nickname,
+    avatarConfig: me.avatarConfig,
+    equippedItems: me.equippedItems
+  };
+  updateLeaderboard();
 });
 
 onValue(ref(db, 'players2'), async snap => {
-  try {
-    const data = snap.val();
-    const uids = Object.keys(data || {}).filter(uid => uid && uid !== "undefined" && typeof uid === 'string');
-    const nicknamePromises = uids.map(async (uid) => {
-      if (!uid || uid === "undefined") return;
-      try {
-        const userSnap = await get(child(ref(db), `users/${uid}`));
-        const userData = userSnap.exists() ? userSnap.val() : {};
+  const data = snap.val() || {};
+  const uids = Object.keys(data).filter(uid => uid && uid !== "undefined" && typeof uid === 'string');
 
-        players[uid] = players[uid] || {};
-        players[uid] = {
-          ...players[uid],
-          ...data[uid],
-          nickname: userData.nickname || uid,
-          avatarConfig: userData.avatarConfig || {},
-          equippedItems: userData.equippedItems || {}
-        };
-      } catch(e) {
-        console.warn("Error fetching user data for uid", uid, e);
-      }
-    });
+  const nicknamePromises = uids.map(async uid => {
+    if (uid === me.id) return; // No sobreescribas tus datos
 
-    await Promise.all(nicknamePromises);
-    updateLeaderboard();
+    try {
+      const userSnap = await get(ref(db, `users/${uid}`));
+      const userData = userSnap.exists() ? userSnap.val() : {};
 
-  } catch(e) {
-    console.error("Error en onValue players:", e);
-  }
+      players[uid] = {
+        ...players[uid],
+        ...data[uid],
+        nickname: userData.nickname || uid,
+        avatarConfig: userData.avatarConfig || {},
+        equippedItems: userData.equippedItems || {}
+      };
+    } catch(e) {
+      console.warn("Error fetching user data for uid", uid, e);
+    }
+  });
+
+  await Promise.all(nicknamePromises);
+
+  updateLeaderboard();
 });
 
 setInterval(() => {
