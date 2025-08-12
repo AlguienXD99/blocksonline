@@ -121,6 +121,7 @@ players[me.id] = {
   equippedItems: me.equippedItems || {}
 };
 updateLeaderboard();
+});
 
 onValue(ref(db, 'players2'), async snap => {
   try {
