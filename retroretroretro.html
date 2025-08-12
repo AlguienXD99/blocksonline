@@ -97,7 +97,7 @@ onAuthStateChanged(auth, async user => {
   } else {
     const data = snap.val();
     me.blocksgold = data.blocksgold || 0;
-    me.nickname = data.nickname || "Anon";
+    me.nickname = data.nickname || (user.displayName || "Anon");
     me.avatarConfig = data.avatarConfig || {};
     me.equippedItems = data.equippedItems || {};
   }
@@ -105,7 +105,13 @@ onAuthStateChanged(auth, async user => {
   document.getElementById("bgCount").innerText = me.blocksgold;
 
   // Actualizar posición inicial
-  update(selfRef, { x: me.x, y: me.y });
+  await update(selfRef, {
+    x: me.x,
+    y: me.y,
+    nickname: me.nickname,
+    avatarConfig: me.avatarConfig || {},
+    equippedItems: me.equippedItems || {}
+  });
 
   // Suscribirse a jugadores
   onValue(playersRef, async snap => {
