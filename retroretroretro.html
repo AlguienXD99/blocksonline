@@ -55,7 +55,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
   
-const playersRef = ref(db, "players");
+const playersRef = ref(db, "players2");
 let players = {}, me = {
   id: null, x: 100, y: 100,
   color: "#888", nickname: "Anon",
@@ -82,7 +82,7 @@ onAuthStateChanged(auth, async user => {
 
   me.id = user.uid;
   userRefPath = ref(db, `users/${me.id}`);
-  selfRef = ref(db, `players/${me.id}`);
+  selfRef = ref(db, `players2/${me.id}`);
 
   // Guardar o inicializar datos del usuario
   const snap = await get(userRefPath);
@@ -126,7 +126,7 @@ onAuthStateChanged(auth, async user => {
   });
 });
 
-onValue(ref(db, 'players'), async snap => {
+onValue(ref(db, 'players2'), async snap => {
   try {
     const data = snap.val();
     const uids = Object.keys(data || {}).filter(uid => uid && uid !== "undefined" && typeof uid === 'string');
