@@ -112,25 +112,15 @@ onAuthStateChanged(auth, async user => {
     avatarConfig: me.avatarConfig || {},
     equippedItems: me.equippedItems || {}
   });
-
-  // Suscribirse a jugadores
-  onValue(playersRef, async snap => {
-    const data = snap.val();
-    const uids = Object.keys(data || {}).filter(uid => uid && typeof uid === 'string');
-    const nicknamePromises = uids.map(async (uid) => {
-      const userSnap = await get(child(ref(db), `users/${uid}`));
-      const userData = userSnap.exists() ? userSnap.val() : {};
-      players[uid] = {
-        ...data[uid],
-        nickname: userData.nickname || uid,
-        avatarConfig: userData.avatarConfig || {},
-        equippedItems: userData.equippedItems || {}
-      };
-    });
-    await Promise.all(nicknamePromises);
-    updateLeaderboard();
-  });
-});
+// después del update(selfRef, {...})
+players[me.id] = {
+  x: me.x,
+  y: me.y,
+  nickname: me.nickname,
+  avatarConfig: me.avatarConfig || {},
+  equippedItems: me.equippedItems || {}
+};
+updateLeaderboard();
 
 onValue(ref(db, 'players2'), async snap => {
   try {
@@ -172,24 +162,28 @@ setInterval(() => {
 
 // Render
 function render() {
-  const size = 40; // <-- ¡Agrega esta línea!
+  const size = 40;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (let uid in players) {
-    const p = players[uid];
-    ctx.fillStyle = p.avatarConfig?.torso || (uid === me.id ? "#ff0" : "#0f0");
+    const p = players[uid] || {};
+    const px = (typeof p.x === 'number') ? p.x : (uid === me.id ? me.x : 0);
+    const py = (typeof p.y === 'number') ? p.y : (uid === me.id ? me.y : 0);
+    const cfg = (uid === me.id) ? (me.avatarConfig || {}) : (p.avatarConfig || {});
+    const gear = (uid === me.id) ? (me.equippedItems || {}) : (p.equippedItems || {});
+
+    // Dibuja avatar CON SUS COLORES (drawAvatarOverlay usa defaults si faltan)
+    drawAvatarOverlay(px, py, cfg, gear);
+
+    // Texto encima del avatar
     ctx.fillStyle = "#fff";
     ctx.font = "12px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(typeof p.nickname === "string" ? p.nickname : uid, p.x, p.y - size * 2.6);
-    const cfg = uid === me.id ? me.avatarConfig : p.avatarConfig || {};
-    const gear = uid === me.id ? me.equippedItems : p.equippedItems || {};
-    drawAvatarOverlay(p.x, p.y, cfg, gear);
+    const name = p.nickname || (uid === me.id ? me.nickname : uid);
+    ctx.fillText(name, px, py - size * 2.6);
   }
 
-  if (currentMini && currentMini.drawZone) {
-    currentMini.drawZone();
-  }
+  if (currentMini && currentMini.drawZone) currentMini.drawZone();
 
   updatePosition();
   requestAnimationFrame(render);
