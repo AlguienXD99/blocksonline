@@ -61,6 +61,8 @@ let players = {}, me = {
   color: "#888", nickname: "Anon",
   avatarConfig: {}, equippedItems: {}
 };
+// Diccionario para cachear imágenes
+const itemImages = {};
 let targetX = me.x, targetY = me.y;
 const speed = 3;
 let currentMini = null;
@@ -244,22 +246,27 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillRect(x + dx - w / 2, y + dy, w, h);
   }
 
-  // Dibuja ítems equipados según su posición
-  for (let key in equipped) {
-    const item = equipped[key];
-    if (!item || !item.imageUrl) continue;
+for (let key in equipped) {
+  const item = equipped[key];
+  if (!item || !item.imageUrl) continue;
 
-    const pos = item.position || "torso"; // default a torso si no hay posición
-
-    const [offsetX, offsetY] = itemPositions[pos] || [0, 0];
-    const imgX = x + offsetX - 15; // ajusta el centro de la imagen
-    const imgY = y + offsetY;
-
+  // Pre-carga la imagen solo una vez
+  if (!itemImages[item.imageUrl]) {
     const img = new Image();
     img.src = item.imageUrl;
-    img.onload = () => {
-      ctx.drawImage(img, imgX, imgY, 30, 30);
-    };
+    itemImages[item.imageUrl] = img;
+  }
+  const img = itemImages[item.imageUrl];
+
+  const pos = item.position || "torso"; // default a torso si no hay posición
+  const [offsetX, offsetY] = itemPositions[pos] || [0, 0];
+
+  const imgX = x + offsetX - 15; // centra la imagen
+  const imgY = y + offsetY;
+
+  // Solo dibuja si ya está cargada
+  if (img.complete) {
+    ctx.drawImage(img, imgX, imgY, 30, 30);
   }
 }
 
