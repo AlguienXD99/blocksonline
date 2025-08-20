@@ -201,20 +201,20 @@ function updatePosition() {
   }
 }
 
+// Cache global para las imágenes de ítems
+const itemImages = {};
+
 function drawAvatarOverlay(x, y, config, equipped) {
   const size = 40;
   const headSize = 28;
 
-  // Define posiciones base para cada "position" que uses en los ítems
-  const itemPositions = {
-    head: [0, -1.1 * size - 30],       // un poco arriba de la cabeza
-    torso: [0, 0],                    // sobre el torso
-    leftArm: [-0.6 * size - 20, 0],  // a la izquierda del brazo izquierdo
-    rightArm: [0.6 * size + 10, 0],  // a la derecha del brazo derecho
-    leftLeg: [-0.25 * size, 1.2 * size + 10],
-    rightLeg: [0.25 * size, 1.2 * size + 10],
-    back: [0, 10],                   // detrás del torso
-    // Puedes agregar más posiciones según tu necesidad
+  const offs = {
+    head: [0, -1.1 * size],
+    torso: [0, 0],
+    leftArm: [-0.6 * size, 0],
+    rightArm: [0.6 * size, 0],
+    leftLeg: [-0.25 * size, 1.2 * size],
+    rightLeg: [0.25 * size, 1.2 * size]
   };
 
   const sizes = {
@@ -226,16 +226,6 @@ function drawAvatarOverlay(x, y, config, equipped) {
     rightLeg: [size * 0.32, size * 1.15]
   };
 
-  const offs = {
-    head: [0, -1.1 * size],
-    torso: [0, 0],
-    leftArm: [-0.6 * size, 0],
-    rightArm: [0.6 * size, 0],
-    leftLeg: [-0.25 * size, 1.2 * size],
-    rightLeg: [0.25 * size, 1.2 * size]
-  };
-
-  // Dibuja partes del avatar
   const renderOrder = ["leftLeg", "rightLeg", "torso", "leftArm", "rightArm", "head"];
   for (let part of renderOrder) {
     const [dx, dy] = offs[part];
@@ -244,22 +234,38 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillRect(x + dx - w / 2, y + dy, w, h);
   }
 
-  // Dibuja ítems equipados según su posición
+  // Posiciones base de los ítems según "position"
+  const itemPositions = {
+    head: [0, -1.1 * size - 30],
+    torso: [0, 0],
+    leftArm: [-0.6 * size - 20, 0],
+    rightArm: [0.6 * size + 10, 0],
+    leftLeg: [-0.25 * size, 1.2 * size + 10],
+    rightLeg: [0.25 * size, 1.2 * size + 10],
+    back: [0, 10]
+  };
+
+  // Dibuja cada ítem equipado
   for (let key in equipped) {
     const item = equipped[key];
     if (!item || !item.imageUrl) continue;
 
-    const pos = item.position || "torso"; // default a torso si no hay posición
+    // Precarga la imagen solo una vez
+    if (!itemImages[item.imageUrl]) {
+      const img = new Image();
+      img.src = item.imageUrl;
+      itemImages[item.imageUrl] = img;
+    }
+    const img = itemImages[item.imageUrl];
 
+    // Usa la posición definida en el item, si no hay usa "torso"
+    const pos = item.position || "torso";
     const [offsetX, offsetY] = itemPositions[pos] || [0, 0];
-    const imgX = x + offsetX - 15; // ajusta el centro de la imagen
-    const imgY = y + offsetY;
 
-    const img = new Image();
-    img.src = item.imageUrl;
-    img.onload = () => {
-      ctx.drawImage(img, imgX, imgY, 30, 30);
-    };
+    // Solo dibuja si la imagen ya se cargó
+    if (img.complete) {
+      ctx.drawImage(img, x + offsetX - 15, y + offsetY, 30, 30);
+    }
   }
 }
 
