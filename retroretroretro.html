@@ -96,7 +96,7 @@ onAuthStateChanged(auth, async user => {
     });
   } else {
     const data = snap.val();
-    me.blocksgold = data.blocksgold || 0;
+    me.blocksgold = data.blocksgold ?? 0;
     me.nickname = data.nickname || (user.displayName || "Anon");
     me.avatarConfig = data.avatarConfig || {};
     me.equippedItems = data.equippedItems || {};
