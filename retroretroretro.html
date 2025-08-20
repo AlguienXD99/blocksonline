@@ -76,6 +76,7 @@ addEventListener("keydown", e => {
 
 let userRefPath = null;
 let selfRef = null;
+let blocksgoldLoaded = false;
 // Firebase Auth y carga de datos
 onAuthStateChanged(auth, async user => {
   if (!user) return;
@@ -85,24 +86,29 @@ onAuthStateChanged(auth, async user => {
   selfRef = ref(db, `players2/${me.id}`);
 
   // Guardar o inicializar datos del usuario
-  const snap = await get(userRefPath);
-  if (!snap.exists()) {
-    await set(userRefPath, {
-      blocksgold: 0,
-      avatarConfig: {},
-      equippedItems: {},
-      nickname: user.displayName || "Anon",
-      isConnectedToGame1: true
-    });
-  } else {
-    const data = snap.val();
-    me.blocksgold = data.blocksgold ?? 0;
-    me.nickname = data.nickname || (user.displayName || "Anon");
-    me.avatarConfig = data.avatarConfig || {};
-    me.equippedItems = data.equippedItems || {};
-  }
-
-  document.getElementById("bgCount").innerText = me.blocksgold;
+const snap = await get(userRefPath);
+if (!snap.exists()) {
+  await set(userRefPath, {
+    blocksgold: 0,
+    avatarConfig: {},
+    equippedItems: {},
+    nickname: user.displayName || "Anon",
+    isConnectedToGame1: true
+  });
+  me.blocksgold = 0;
+  me.nickname = user.displayName || "Anon";
+  me.avatarConfig = {};
+  me.equippedItems = {};
+  blocksgoldLoaded = true;  // ✅ datos inicializados
+} else {
+  const data = snap.val();
+  me.blocksgold = data.blocksgold ?? 0;
+  me.nickname = data.nickname || (user.displayName || "Anon");
+  me.avatarConfig = data.avatarConfig || {};
+  me.equippedItems = data.equippedItems || {};
+  blocksgoldLoaded = true;  // ✅ datos cargados
+}
+document.getElementById("bgCount").innerText = me.blocksgold;
 
   // Actualizar posición inicial
   await update(selfRef, {
@@ -157,9 +163,14 @@ onValue(ref(db, 'players2'), async snap => {
 setInterval(() => {
   if (selfRef && userRefPath) {
     update(selfRef, { x: me.x, y: me.y }).catch(console.warn);
-    update(userRefPath, { blocksgold: (typeof me.blocksgold === 'number' ? me.blocksgold : 0) }).catch(console.warn);
+    
+    // Solo actualizar blocksgold si ya se cargó
+    if (blocksgoldLoaded) {
+      update(userRefPath, { blocksgold: me.blocksgold }).catch(console.warn);
+    }
   }
 }, 500);
+
 
 // Render
 function render() {
