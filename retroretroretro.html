@@ -99,15 +99,14 @@ if (!snap.exists()) {
   me.nickname = user.displayName || "Anon";
   me.avatarConfig = {};
   me.equippedItems = {};
-  blocksgoldLoaded = true;  // ✅ datos inicializados
 } else {
   const data = snap.val();
-  me.blocksgold = data.blocksgold ?? 0;
+  me.blocksgold = data.blocksgold ?? 0;  // ✅ solo inicializar con valor existente
   me.nickname = data.nickname || (user.displayName || "Anon");
   me.avatarConfig = data.avatarConfig || {};
   me.equippedItems = data.equippedItems || {};
-  blocksgoldLoaded = true;  // ✅ datos cargados
 }
+blocksgoldLoaded = true; // ✅ marcar cargado **después** de asignar
 document.getElementById("bgCount").innerText = me.blocksgold;
 
   // Actualizar posición inicial
@@ -161,16 +160,10 @@ onValue(ref(db, 'players2'), async snap => {
 });
 
 setInterval(() => {
-  if (selfRef && userRefPath) {
+  if (selfRef) {
     update(selfRef, { x: me.x, y: me.y }).catch(console.warn);
-    
-    // Solo actualizar blocksgold si ya se cargó
-    if (blocksgoldLoaded) {
-      update(userRefPath, { blocksgold: me.blocksgold }).catch(console.warn);
-    }
   }
 }, 500);
-
 
 // Render
 function render() {
