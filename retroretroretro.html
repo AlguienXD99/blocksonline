@@ -245,12 +245,13 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillStyle = config[part] || "#555";
     ctx.fillRect(x + dx - w / 2, y + dy, w, h);
   }
+  
 const itemPositions = {
   head: [0, -1.1 * size],
   torso: [0, 0],
   leftArm: [-0.6 * size - 20, 0],
   rightArm: [0.6 * size + 10, 0],
-  leftLeg: [-0.1 * size, 1.1 * size + 10], // más arriba y un poco a la derecha
+  leftLeg: [-0.05 * size, 1.0 * size + 10], // aún más arriba y más a la derecha
   rightLeg: [0.25 * size, 1.2 * size + 10],
   back: [0, 10]
 };
