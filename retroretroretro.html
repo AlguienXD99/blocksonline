@@ -246,15 +246,15 @@ function drawAvatarOverlay(x, y, config, equipped) {
     ctx.fillRect(x + dx - w / 2, y + dy, w, h);
   }
 
-  const itemPositions = {
-    head: [0, -1.1 * size],
-    torso: [0, 0],
-    leftArm: [-0.6 * size - 20, 0],
-    rightArm: [0.6 * size + 10, 0],
-    leftLeg: [-0.25 * size, 1.2 * size + 10],
-    rightLeg: [0.25 * size, 1.2 * size + 10],
-    back: [0, 10]
-  };
+const itemPositions = {
+  head: [0, -1.1 * size],
+  torso: [0, 0],
+  leftArm: [-0.6 * size - 20, 0],
+  rightArm: [0.6 * size + 10, 0],
+  leftLeg: [-0.25 * size, 1.6 * size + 10], // bajado
+  rightLeg: [0.25 * size, 1.6 * size + 10], // bajado
+  back: [0, 10]
+};
 
   // Dibuja cada ítem equipado
   for (let key in equipped) {
