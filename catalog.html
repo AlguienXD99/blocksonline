@@ -89,12 +89,19 @@ async function changeAvatarColor(bodyPart, color) {
         return;
     }
 
+    // Aplicar al avatar
     const part = document.getElementById(bodyPart);
     if (part) {
         part.style.backgroundColor = color;
     }
 
-    // Guardar el color en Firebase solo si es válido
+    // 🔹 SINCRONIZAR EL COLOR PICKER
+    const input = document.getElementById(`color-${bodyPart}`);
+    if (input && input.value !== color) {
+        input.value = color;
+    }
+
+    // Guardar en Firebase
     const user = auth.currentUser;
     if (user) {
         const userRef = ref(db, "users/" + user.uid + "/avatarConfig");
@@ -348,32 +355,38 @@ async function unequipItem(itemName) {
     </div>
 <div>
   <h3>Change Head Color</h3>
-  <input type="color" onchange="changeAvatarColor('head', this.value)">
+  <input type="color" id="color-head"
+         onchange="changeAvatarColor('head', this.value)">
 </div>
 
 <div>
   <h3>Change Torso Color</h3>
-  <input type="color" onchange="changeAvatarColor('torso', this.value)">
+  <input type="color" id="color-torso"
+         onchange="changeAvatarColor('torso', this.value)">
 </div>
 
 <div>
   <h3>Change Left Leg Color</h3>
-  <input type="color" onchange="changeAvatarColor('leftLeg', this.value)">
+  <input type="color" id="color-leftLeg"
+         onchange="changeAvatarColor('leftLeg', this.value)">
 </div>
 
 <div>
   <h3>Change Right Leg Color</h3>
-  <input type="color" onchange="changeAvatarColor('rightLeg', this.value)">
+  <input type="color" id="color-rightLeg"
+         onchange="changeAvatarColor('rightLeg', this.value)">
 </div>
 
 <div>
   <h3>Change Left Arm Color</h3>
-  <input type="color" onchange="changeAvatarColor('leftArm', this.value)">
+  <input type="color" id="color-leftArm"
+         onchange="changeAvatarColor('leftArm', this.value)">
 </div>
 
 <div>
   <h3>Change Right Arm Color</h3>
-  <input type="color" onchange="changeAvatarColor('rightArm', this.value)">
+  <input type="color" id="color-rightArm"
+         onchange="changeAvatarColor('rightArm', this.value)">
 </div>
     <!-- Avatar representation -->
 <div id="avatar">
