@@ -1,6 +1,6 @@
-# Blocksonline
+# BLOXPAST2D
 
-Blocksonline es un juego multijugador en línea inspirado en juegos como Roblox, pero con un diseño simple y "blocky". El proyecto está desarrollado con un enfoque en la simplicidad, la personalización y la diversión. En lugar de usar Roblox Studio, el juego utiliza **Firebase** para sus funcionalidades multijugador y almacenamiento.
+BLOXPAST2D es un juego multijugador en línea inspirado en juegos como Roblox, pero con un diseño simple y "blocky". El proyecto está desarrollado con un enfoque en la simplicidad, la personalización y la diversión. En lugar de usar Roblox Studio, el juego utiliza **Firebase** para sus funcionalidades multijugador y almacenamiento.
 
 ## Características
 
